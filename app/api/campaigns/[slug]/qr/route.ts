@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
       errorCorrectionLevel: 'H', // High — survives printing wear
     })
 
-    return new NextResponse(qrBuffer, {
+    return new NextResponse(new Uint8Array(qrBuffer), {
       headers: {
         'Content-Type':        'image/png',
         'Content-Disposition': `attachment; filename="green-emblem-qr-${params.slug}.png"`,
