@@ -76,7 +76,6 @@ export default function Nav() {
 
         {/* Desktop links */}
         <ul style={{ display:'flex', alignItems:'center', gap:'28px', listStyle:'none',
-          '@media (max-width: 768px)': { display:'none' } as any }}
           className="nav-desktop-links">
           <li><Link href="/shop" style={linkStyle}>Shop</Link></li>
           <li><Link href="/favours" style={linkStyle}>Party Favours</Link></li>
