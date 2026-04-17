@@ -39,12 +39,9 @@ export default function Nav() {
         <rect x="42" y="42" width="136" height="136" rx="6" fill="none" stroke="#c8a050" strokeWidth="3" transform="rotate(0 110 110)"/>
         <rect x="42" y="42" width="136" height="136" rx="6" fill="none" stroke="#c8a050" strokeWidth="3" transform="rotate(45 110 110)"/>
         <polygon points="110,42 158,42 190,74 190,146 158,178 62,178 30,146 30,74 62,42" fill="#2e6b2e" stroke="#c8a050" strokeWidth="2.5"/>
-        <polygon points="110,52 152,52 180,80 180,140 152,168 68,168 40,140 40,80 68,52" fill="none" stroke="#d4af6e" strokeWidth="1" opacity="0.45"/>
         <circle cx="103" cy="104" r="44" fill="#d4af6e"/>
         <circle cx="117" cy="96" r="37" fill="#2e6b2e"/>
-        <g transform="translate(158,82)">
-          <polygon points="0,-16 3.8,-6.2 14.8,-5 6.8,3 9.4,14 0,8.2 -9.4,14 -6.8,3 -14.8,-5 -3.8,-6.2" fill="#d4af6e"/>
-        </g>
+        <g transform="translate(158,82)"><polygon points="0,-16 3.8,-6.2 14.8,-5 6.8,3 9.4,14 0,8.2 -9.4,14 -6.8,3 -14.8,-5 -3.8,-6.2" fill="#d4af6e"/></g>
       </svg>
       <span style={{ fontFamily:'var(--font-cinzel)', fontSize:'13px', letterSpacing:'0.2em', color:'#d4af6e' }}>
         Green Emblem
@@ -66,7 +63,7 @@ export default function Nav() {
   const linkStyle: React.CSSProperties = {
     fontFamily: 'var(--font-cinzel)', fontSize: '10px',
     letterSpacing: '0.16em', color: 'rgba(255,255,255,0.55)',
-    textDecoration: 'none', position: 'relative', transition: 'color 0.2s',
+    textDecoration: 'none', transition: 'color 0.2s',
   }
 
   return (
@@ -74,9 +71,7 @@ export default function Nav() {
       <nav style={navStyle} role="navigation" aria-label="Main navigation">
         <Logo />
 
-        {/* Desktop links */}
-        <ul style={{ display:'flex', alignItems:'center', gap:'28px', listStyle:'none',
-          className="nav-desktop-links">
+        <ul className="nav-desktop-links" style={{ display:'flex', alignItems:'center', gap:'28px', listStyle:'none' }}>
           <li><Link href="/shop" style={linkStyle}>Shop</Link></li>
           <li><Link href="/favours" style={linkStyle}>Party Favours</Link></li>
           <li><Link href="/events" style={linkStyle}>Find a Decorator</Link></li>
@@ -85,9 +80,9 @@ export default function Nav() {
             <>
               <li><Link href="/dashboard" style={linkStyle}>My Dashboard</Link></li>
               <li>
-                <button onClick={signOut} style={{
-                  ...linkStyle, background:'none', border:'none', cursor:'pointer', padding:0
-                }}>Sign out</button>
+                <button onClick={signOut} style={{ ...linkStyle, background:'none', border:'none', cursor:'pointer', padding:0 }}>
+                  Sign out
+                </button>
               </li>
             </>
           ) : (
@@ -96,7 +91,6 @@ export default function Nav() {
                 fontFamily:'var(--font-cinzel)', fontSize:'10px', letterSpacing:'0.14em',
                 color:'var(--forest-dark)', background:'var(--gold)',
                 padding:'8px 18px', borderRadius:'6px', textDecoration:'none',
-                transition:'opacity 0.15s',
               }}>
                 Sign in
               </Link>
@@ -113,21 +107,19 @@ export default function Nav() {
           </li>
         </ul>
 
-        {/* Mobile toggle */}
         <button
           className="nav-mobile-toggle"
           onClick={() => setMenuOpen(!menuOpen)}
           aria-label="Toggle menu"
           aria-expanded={menuOpen}
-          style={{ display:'none', background:'none', border:'none', cursor:'pointer', flexDirection:'column', gap:'5px', padding:'4px' }}
+          style={{ background:'none', border:'none', cursor:'pointer', flexDirection:'column', gap:'5px', padding:'4px', display:'none' }}
         >
           {[0,1,2].map(i => (
-            <span key={i} style={{ display:'block', width:'22px', height:'1.5px', background:'var(--gold)', borderRadius:'1px', transition:'all 0.2s' }}/>
+            <span key={i} style={{ display:'block', width:'22px', height:'1.5px', background:'var(--gold)', borderRadius:'1px' }}/>
           ))}
         </button>
       </nav>
 
-      {/* Mobile menu */}
       {menuOpen && (
         <div style={{
           position:'fixed', top:'68px', left:0, right:0, zIndex:99,
