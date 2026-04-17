@@ -4,7 +4,7 @@ import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'fizzah@greenemblem.com'
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'omer.a@greenemblem.com'
 const FROM = process.env.EMAIL_FROM || 'Green Emblem <noreply@green-emblem.com>'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://green-emblem.com'
 
