@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
   const admin = createAdminClient()
 
   if (event.type === 'checkout.session.completed') {
-    const session = event.data.object as Stripe.CheckoutSession
+    const session = event.data.object as Stripe.Checkout.Session
     const meta = session.metadata || {}
 
     // ── FAVOUR / SHOP / SAMPLE ORDER ──────────────────────────────────────────
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
 
   // Handle failed payments — revert order to cancelled
   if (event.type === 'checkout.session.expired') {
-    const session = event.data.object as Stripe.CheckoutSession
+    const session = event.data.object as Stripe.Checkout.Session
     const meta = session.metadata || {}
     if (meta.order_id) {
       await admin.from('orders').update({ status: 'cancelled' }).eq('id', meta.order_id)
