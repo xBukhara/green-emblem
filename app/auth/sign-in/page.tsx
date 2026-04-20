@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function SignInPage() {
@@ -19,13 +19,11 @@ function SignInInner() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const redirect = searchParams.get('redirect') || '/dashboard'
   const supabase = createClient()
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) router.push(redirect)
+      if (data.user) router.push('/dashboard')
     })
   }, [])
 
@@ -35,7 +33,7 @@ function SignInInner() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `https://green-emblem.com/auth/callback`,
+        redirectTo: 'https://green-emblem.com/auth/callback',
         queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     })
