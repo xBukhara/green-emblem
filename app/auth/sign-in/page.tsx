@@ -35,7 +35,7 @@ function SignInInner() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`,
+        redirectTo: `https://green-emblem.com/auth/callback?redirect=${encodeURIComponent(redirect)}`,
         queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     })
