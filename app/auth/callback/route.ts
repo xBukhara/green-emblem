@@ -28,13 +28,8 @@ export async function GET(request: NextRequest) {
       }
     )
 
-    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
-
-    if (!exchangeError) {
-      const response = NextResponse.redirect('https://green-emblem.com/dashboard')
-      return response
-    }
+    await supabase.auth.exchangeCodeForSession(code)
   }
 
-  return NextResponse.redirect('https://green-emblem.com/auth/sign-in')
+  return NextResponse.redirect('https://green-emblem.com/auth/confirm')
 }
