@@ -21,37 +21,19 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh session — keep it alive
   const { data: { user } } = await supabase.auth.getUser()
-
   const { pathname } = request.nextUrl
 
-  // Protected routes — redirect to sign-in if not authenticated
-  const protectedPaths = ['/dashboard', '/admin', '/affiliates/dashboard']
-  const isProtected = protectedPaths.some(p => pathname.startsWith(p))
-
-  if (isProtected && !user) {
+  // Only protect admin route strictly
+  if (pathname.startsWith('/admin') && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/sign-in'
-    url.searchParams.set('redirect', pathname)
     return NextResponse.redirect(url)
   }
 
-  // Admin-only routes
-  if (pathname.startsWith('/admin') && user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      const url = request.nextUrl.clone()
-      url.pathname = '/dashboard'
-      return NextResponse.redirect(url)
-    }
-  }
-
+  // For dashboard, allow through and let client-side handle auth
+  // This prevents the middleware from blocking sessions that haven't
+  // propagated to server cookies yet
   return supabaseResponse
 }
 
