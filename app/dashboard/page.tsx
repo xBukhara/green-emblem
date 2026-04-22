@@ -21,16 +21,12 @@ export default function DashboardPage() {
       if (!user) { router.push('/auth/sign-in'); return }
       setUser(user)
 
-      const [profileRes, donationsRes, campaignsRes, requestsRes] = await Promise.all([
+      const [profileRes, donationsRes, requestsRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
         supabase.from('donations')
           .select('*, campaigns(slug, honoree_names, event_type, event_date)')
           .eq('user_id', user.id)
           .eq('confirmed', true)
-          .order('created_at', { ascending: false }),
-        supabase.from('campaigns')
-          .select('*')
-          .eq('organiser_id', user.id)
           .order('created_at', { ascending: false }),
         supabase.from('campaign_requests')
           .select('*')
@@ -38,15 +34,38 @@ export default function DashboardPage() {
           .order('submitted_at', { ascending: false }),
       ])
 
+      // Load campaigns matching by organiser_id OR request email
+      const { data: allCampaigns } = await supabase
+        .from('campaigns')
+        .select('*, campaign_requests(email)')
+        .order('created_at', { ascending: false })
+      const userCampaigns = (allCampaigns || []).filter((c: any) =>
+        c.organiser_id === user.id || c.campaign_requests?.email === user.email
+      )
+
       setProfile(profileRes.data)
       setDonations(donationsRes.data || [])
-      setCampaigns(campaignsRes.data || [])
+      setCampaigns(userCampaigns)
       setRequests(requestsRes.data || [])
       setLoading(false)
     })
   }, [])
 
-  const totalDonated    = donations.reduce((s, d) => s + (d.amount || 0), 0)
+  // Auto-refresh campaign stats every 5 minutes
+  useEffect(() => {
+    if (!user) return
+    const interval = setInterval(async () => {
+      const { data: allCampaigns } = await supabase
+        .from('campaigns')
+        .select('*, campaign_requests(email)')
+        .order('created_at', { ascending: false })
+      const userCampaigns = (allCampaigns || []).filter((c: any) =>
+        c.organiser_id === user.id || c.campaign_requests?.email === user.email
+      )
+      setCampaigns(userCampaigns)
+    }, 5 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [user])
   const totalMeals      = donations.reduce((s, d) => s + (d.meals_funded || 0), 0)
   const uniqueCampaigns = new Set(donations.map(d => d.campaign_id)).size
 
