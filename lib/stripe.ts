@@ -215,3 +215,39 @@ export async function createSampleCheckout({
 
   return session
 }
+export async function createPremiumQRCheckout({
+  customerEmail,
+  campaignSlug,
+  campaignId,
+  designId,
+}: {
+  customerEmail: string
+  campaignSlug: string
+  campaignId: string
+  designId: string
+}) {
+  const session = await stripe.checkout.sessions.create({
+    mode: 'payment',
+    customer_email: customerEmail,
+    line_items: [{
+      price_data: {
+        currency: 'usd',
+        product_data: {
+          name: 'Baab As-Sadaqah Premium QR',
+          description: 'Printable QR card designs with Islamic artwork for your event',
+        },
+        unit_amount: 99,
+      },
+      quantity: 1,
+    }],
+    metadata: {
+      order_type:    'premium_qr',
+      campaign_id:   campaignId,
+      campaign_slug: campaignSlug,
+      design_id:     designId,
+    },
+    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?premium_qr=success&campaign=${campaignSlug}`,
+    cancel_url:  `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+  })
+  return session
+}
