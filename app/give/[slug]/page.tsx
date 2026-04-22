@@ -137,6 +137,18 @@ export default function CampaignPage() {
       })
   }, [slug])
 
+  // Refresh stats every 30 seconds to show live donor count
+  useEffect(() => {
+    if (!campaign) return
+    const interval = setInterval(async () => {
+      const { data } = await supabase.from('campaigns')
+        .select('total_raised, donor_count, meals_funded')
+        .eq('id', campaign.id).single()
+      if (data) setCampaign((c: any) => ({ ...c, ...data }))
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [campaign?.id])
+
   const finalAmount = useCustom ? parseFloat(customAmount) || 0 : amount
 
   const handleDonate = async () => {
@@ -164,19 +176,21 @@ export default function CampaignPage() {
   }
 
   const handleConfirm = async () => {
-    // Mark confirmed and redirect to charity
+    // Mark confirmed immediately — STM has no webhook so we trust the user
+    // clicked through intentionally
     if (donationId) {
       await supabase.from('donations').update({ confirmed: true }).eq('id', donationId)
-      // Update campaign stats
       await supabase.rpc('increment_campaign_stats', {
         p_campaign_id: campaign.id,
         p_amount: finalAmount,
         p_meals: charity.id === 'share_the_meal' ? Math.floor(finalAmount / 0.80) : 0,
       })
     }
-    // Open charity in new tab, show thanks screen
-    window.open(charity.buildUrl(finalAmount), '_blank')
+    // Show thanks screen first, then open charity in new tab
     setStep('thanks')
+    setTimeout(() => {
+      window.open(charity.buildUrl(finalAmount), '_blank')
+    }, 800)
   }
 
   if (loading) return (
