@@ -192,10 +192,13 @@ function CampaignBuilderInner() {
               <h2 style={{ fontFamily:'var(--font-cinzel)', fontSize:'13px', color:'#fff', marginBottom:'4px' }}>Event details</h2>
               <div>{lbl('Names to honour')}<input type="text" value={honoreeNames} onChange={e=>setHonoreeNames(e.target.value)} placeholder="e.g. Aisha & Ibrahim" className="ge-input"/></div>
               <div>{lbl('Event type')}
-                <select value={eventType} onChange={e=>setEventType(e.target.value)} style={{ width:'100%', background:'rgba(255,255,255,0.04)', border:'0.5px solid rgba(212,175,110,0.18)', borderRadius:'8px', padding:'12px 14px', fontFamily:'var(--font-cormorant)', fontSize:'16px', color: eventType ? '#fff' : 'rgba(255,255,255,0.35)', outline:'none', appearance:'none', cursor:'pointer' }}>
+                <select value={['Nikkah','Walima','Aqiqah','Eid','Graduation','Anniversary'].includes(eventType) ? eventType : eventType ? 'Other' : ''} onChange={e => { if (e.target.value !== 'Other') setEventType(e.target.value); else setEventType('') }} style={{ width:'100%', background:'rgba(255,255,255,0.04)', border:'0.5px solid rgba(212,175,110,0.18)', borderRadius:'8px', padding:'12px 14px', fontFamily:'var(--font-cormorant)', fontSize:'16px', color: eventType ? '#fff' : 'rgba(255,255,255,0.35)', outline:'none', appearance:'none', cursor:'pointer', marginBottom:'8px' }}>
                   <option value="">Select event type…</option>
                   {['Nikkah','Walima','Aqiqah','Eid','Graduation','Anniversary','Other'].map(t=><option key={t} value={t}>{t}</option>)}
                 </select>
+                {(!['Nikkah','Walima','Aqiqah','Eid','Graduation','Anniversary'].includes(eventType) && (eventType !== '' || false)) || (!['Nikkah','Walima','Aqiqah','Eid','Graduation','Anniversary',''].includes(eventType)) ? (
+                  <input type="text" value={eventType} onChange={e => setEventType(e.target.value)} placeholder="e.g. Shaadi Ceremony, Mehndi, Khitaan…" className="ge-input"/>
+                ) : null}
               </div>
               <div>{lbl('Event date')}<input type="date" value={eventDate} onChange={e=>setEventDate(e.target.value)} className="ge-input" style={{ colorScheme:'dark' }}/></div>
               <div>{lbl('Venue / location (optional)')}<input type="text" value={location} onChange={e=>setLocation(e.target.value)} placeholder="e.g. The Grand Ballroom, Queens NY" className="ge-input"/></div>

@@ -302,7 +302,7 @@ export default function CampaignPage() {
             {campaign.honoree_names}
           </h1>
           <div style={{ fontFamily:'var(--font-cinzel)', fontSize:'10px', letterSpacing:'0.18em', color:'rgba(255,255,255,0.35)', marginBottom:'24px' }}>
-            {campaign.event_type}{campaign.event_date ? ` · ${campaign.event_date}` : ''}{campaign.location ? ` · ${campaign.location}` : ''}
+            {campaign.event_type && campaign.event_type !== 'Other' ? campaign.event_type : ''}{campaign.event_date ? ` · ${campaign.event_date}` : ''}{campaign.location ? ` · ${campaign.location}` : ''}
           </div>
 
           {/* Verse */}
