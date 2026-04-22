@@ -51,6 +51,10 @@ export default function DashboardPage() {
     })
   }, [])
 
+  const totalDonated    = donations.reduce((s, d) => s + (d.amount || 0), 0)
+  const totalMeals      = donations.reduce((s, d) => s + (d.meals_funded || 0), 0)
+  const uniqueCampaigns = new Set(donations.map(d => d.campaign_id)).size
+
   // Auto-refresh campaign stats every 5 minutes
   useEffect(() => {
     if (!user) return
@@ -66,8 +70,6 @@ export default function DashboardPage() {
     }, 5 * 60 * 1000)
     return () => clearInterval(interval)
   }, [user])
-  const totalMeals      = donations.reduce((s, d) => s + (d.meals_funded || 0), 0)
-  const uniqueCampaigns = new Set(donations.map(d => d.campaign_id)).size
 
   const charityLabel = (id: string) => ({ share_the_meal:'Share The Meal', islamic_relief:'Islamic Relief USA', unicef:'UNICEF USA' }[id] || id)
   const charityColor = (id: string) => ({ share_the_meal:'#E8A020', islamic_relief:'#1D9E75', unicef:'#378ADD' }[id] || '#d4af6e')
