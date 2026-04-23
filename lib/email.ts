@@ -4,7 +4,7 @@ import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'omer.a@green-emblem.com'
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'fizzah@greenemblem.com'
 const FROM = process.env.EMAIL_FROM || 'Green Emblem <noreply@green-emblem.com>'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://green-emblem.com'
 
@@ -405,6 +405,129 @@ export async function sendMagicLink(data: {
         <p style="font-size:12px;color:#999;text-align:center;line-height:1.6">
           This link is private and unique to you. Do not share it.<br/>
           It expires in 7 days. If you need a new link, contact us.
+        </p>
+      </div>
+    `),
+  })
+}
+
+export async function sendCampaignActivated(data: {
+  firstName: string
+  email: string
+  honoreeNames: string
+  eventType: string
+  campaignSlug: string
+  qrDownloadUrl: string
+}) {
+  const campaignUrl = `${process.env.NEXT_PUBLIC_APP_URL}/give/${data.campaignSlug}`
+  const qrUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/campaigns/${data.campaignSlug}/qr`
+
+  return resend.emails.send({
+    from: process.env.EMAIL_FROM || 'Green Emblem <onboarding@resend.dev>',
+    to: data.email,
+    subject: `Your Baab As-Sadaqah campaign is live — ${data.honoreeNames}`,
+    html: emailWrapper(`
+      ${emailHeader('Your campaign is live!')}
+      <div style="padding:24px 32px">
+        <p style="font-size:16px;line-height:1.7;color:#333">Assalamu Alaikum ${data.firstName},</p>
+        <p style="font-size:15px;line-height:1.7;color:#333">
+          Alhamdulillah! Your Baab As-Sadaqah campaign for <strong>${data.honoreeNames}</strong> is now live and ready to share.
+        </p>
+        <div style="background:#f5f0e6;border-radius:10px;padding:16px 20px;margin:20px 0;border-left:3px solid #d4af6e">
+          <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.15em;color:#2e6b2e;margin-bottom:6px">YOUR CAMPAIGN LINK</div>
+          <div style="font-size:14px;color:#333;word-break:break-all">${campaignUrl}</div>
+        </div>
+        <p style="font-size:15px;line-height:1.7;color:#333">
+          Share this link with your guests, or download your QR code to place on tables, in programmes, and on display boards at your event.
+        </p>
+        <div style="text-align:center;margin:28px 0;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <a href="${campaignUrl}" style="background:#d4af6e;color:#0f1f0f;padding:14px 28px;border-radius:10px;text-decoration:none;font-size:15px;display:inline-block;font-weight:bold">
+            View my campaign →
+          </a>
+          <a href="${qrUrl}" style="background:#0f1f0f;color:#d4af6e;padding:14px 28px;border-radius:10px;text-decoration:none;font-size:15px;display:inline-block;border:1px solid #d4af6e">
+            Download QR code
+          </a>
+        </div>
+        <p style="font-size:14px;line-height:1.7;color:#888">
+          Your campaign will remain active for 30 days. You can view live donation stats on your <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard" style="color:#2e6b2e">dashboard</a> at any time.
+        </p>
+        <div style="text-align:center;margin:20px 0;font-size:18px;color:#2e6b2e;font-family:serif">
+          تَقَبَّلَ اللَّهُ مِنَّا وَمِنكُمْ
+        </div>
+      </div>
+    `),
+  })
+}
+
+
+export async function sendCampaignEnded(data: {
+  firstName: string
+  email: string
+  honoreeNames: string
+  eventType: string
+  campaignSlug: string
+  totalRaised: number
+  donorCount: number
+  mealsFunded: number
+}) {
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+
+  return resend.emails.send({
+    from: process.env.EMAIL_FROM || 'Green Emblem <onboarding@resend.dev>',
+    to: data.email,
+    subject: `MashaAllah — your campaign for ${data.honoreeNames} has ended`,
+    html: emailWrapper(`
+      ${emailHeader('JazakAllahu Khairan')}
+      <div style="padding:24px 32px">
+        <p style="font-size:16px;line-height:1.7;color:#333">Assalamu Alaikum ${data.firstName},</p>
+        <p style="font-size:15px;line-height:1.7;color:#333">
+          MashaAllah! Your Baab As-Sadaqah campaign for <strong>${data.honoreeNames}</strong> has come to a close.
+          Here is a summary of the barakah your event generated:
+        </p>
+
+        <div style="background:#f5f0e6;border-radius:12px;padding:20px 24px;margin:20px 0;text-align:center">
+          <div style="display:flex;justify-content:center;gap:32px;flex-wrap:wrap">
+            <div style="text-align:center">
+              <div style="font-size:32px;font-weight:bold;color:#2e6b2e">$${data.totalRaised.toFixed(2)}</div>
+              <div style="font-size:12px;color:#666;letter-spacing:0.1em;margin-top:4px">RAISED</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:32px;font-weight:bold;color:#2e6b2e">${data.donorCount}</div>
+              <div style="font-size:12px;color:#666;letter-spacing:0.1em;margin-top:4px">DONORS</div>
+            </div>
+            ${data.mealsFunded > 0 ? `<div style="text-align:center">
+              <div style="font-size:32px;font-weight:bold;color:#2e6b2e">${data.mealsFunded}</div>
+              <div style="font-size:12px;color:#666;letter-spacing:0.1em;margin-top:4px">MEALS FUNDED</div>
+            </div>` : ''}
+          </div>
+        </div>
+
+        <p style="font-size:15px;line-height:1.8;color:#333;font-style:italic;border-left:3px solid #d4af6e;padding-left:16px;margin:20px 0">
+          "The Prophet ﷺ said: 'When a person dies, his deeds come to an end except for three: 
+          ongoing charity (sadaqah jariyah), knowledge that is benefited from, and a righteous child who prays for him.'"
+          <br/><span style="font-size:12px;color:#888">— Sahih Muslim</span>
+        </p>
+
+        <p style="font-size:15px;line-height:1.7;color:#333">
+          Every meal funded, every dollar given in the names of your honourees — these are deeds that endure.
+          May Allah accept it from you and from them, and may He bless the occasion it was given for.
+        </p>
+
+        <div style="text-align:center;margin:24px 0;font-size:20px;color:#2e6b2e;font-family:serif">
+          تَقَبَّلَ اللَّهُ مِنَّا وَمِنكُمْ
+        </div>
+        <div style="text-align:center;font-size:13px;color:#888;margin-bottom:20px;font-style:italic">
+          May Allah accept from us and from you.
+        </div>
+
+        <div style="text-align:center;margin:24px 0">
+          <a href="${dashboardUrl}" style="background:#d4af6e;color:#0f1f0f;padding:14px 28px;border-radius:10px;text-decoration:none;font-size:15px;display:inline-block;font-weight:bold">
+            View your impact dashboard →
+          </a>
+        </div>
+
+        <p style="font-size:13px;line-height:1.7;color:#888;text-align:center">
+          Planning another event? <a href="${process.env.NEXT_PUBLIC_APP_URL}/sadaqah/request" style="color:#2e6b2e">Request a new campaign</a> anytime.
         </p>
       </div>
     `),

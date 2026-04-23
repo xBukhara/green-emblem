@@ -20,6 +20,8 @@ export default function AdminPage() {
   const [productModal, setProductModal] = useState(false)
   const [editProduct, setEditProduct] = useState<any>(null)
   const [form, setForm] = useState({ name:'', category:'favours', price:'', description:'', stock_status:'in_stock', visibility:'draft', is_favour_item: false })
+  const [images, setImages] = useState<string[]>([])
+  const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [sending, setSending] = useState<string|null>(null)
 
@@ -71,7 +73,7 @@ export default function AdminPage() {
 
   const saveProduct = async () => {
     setSaving(true)
-    const data = { ...form, price: parseFloat(form.price) }
+    const data = { ...form, price: parseFloat(form.price), images }
     if (editProduct) {
       await supabase.from('products').update({ ...data, updated_at: new Date().toISOString() }).eq('id', editProduct.id)
     } else {
@@ -80,6 +82,7 @@ export default function AdminPage() {
     await loadAll()
     setProductModal(false)
     setEditProduct(null)
+    setImages([])
     setForm({ name:'', category:'favours', price:'', description:'', stock_status:'in_stock', visibility:'draft', is_favour_item: false })
     setSaving(false)
   }
@@ -111,6 +114,55 @@ export default function AdminPage() {
   const updateCampaignStatus = async (id: string, status: string) => {
     await supabase.from('campaigns').update({ status }).eq('id', id)
     setCampaigns((c: any[]) => c.map((x: any) => x.id === id ? { ...x, status } : x))
+
+    // Send activation email when going live
+    if (status === 'active') {
+      const camp = campaigns.find((c: any) => c.id === id)
+      if (camp) {
+        const { data: req } = await supabase
+          .from('campaign_requests')
+          .select('first_name, email')
+          .eq('id', camp.request_id)
+          .single()
+        if (req) {
+          const { data: { session } } = await supabase.auth.getSession()
+          fetch('/api/admin/campaign-activated', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+            body: JSON.stringify({ firstName: req.first_name, email: req.email, honoreeNames: camp.honoree_names, eventType: camp.event_type, campaignSlug: camp.slug }),
+          }).catch(console.error)
+        }
+      }
+    }
+
+    // Send impact summary email when campaign ends
+    if (status === 'ended') {
+      const camp = campaigns.find((c: any) => c.id === id)
+      if (camp) {
+        const { data: req } = await supabase
+          .from('campaign_requests')
+          .select('first_name, email')
+          .eq('id', camp.request_id)
+          .single()
+        if (req) {
+          const { data: { session } } = await supabase.auth.getSession()
+          fetch('/api/admin/campaign-ended', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+            body: JSON.stringify({
+              firstName: req.first_name,
+              email: req.email,
+              honoreeNames: camp.honoree_names,
+              eventType: camp.event_type,
+              campaignSlug: camp.slug,
+              totalRaised: camp.total_raised || 0,
+              donorCount: camp.donor_count || 0,
+              mealsFunded: camp.meals_funded || 0,
+            }),
+          }).catch(console.error)
+        }
+      }
+    }
   }
 
   const updateOrderStatus = async (id: string, status: string) => {
@@ -132,13 +184,45 @@ export default function AdminPage() {
 
   const openEdit = (p: any) => {
     setEditProduct(p)
+    setImages(p.images || [])
     setForm({ name: p.name, category: p.category, price: p.price.toString(), description: p.description || '', stock_status: p.stock_status, visibility: p.visibility, is_favour_item: p.is_favour_item })
     setProductModal(true)
   }
 
   const filteredProducts = catFilter === 'all' ? products : products.filter((p: any) => p.category === catFilter)
 
-  // ── Styles ──────────────────────────────────────────────────────────────────
+  const uploadImage = async (file: File) => {
+    setUploading(true)
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'green_emblem_products')
+    formData.append('folder', 'products')
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      })
+      const data = await res.json()
+      if (data.secure_url) {
+        setImages(prev => [...prev, data.secure_url])
+      }
+    } catch (e) {
+      console.error('Upload failed', e)
+    }
+    setUploading(false)
+  }
+
+  const removeImage = (url: string) => {
+    setImages(prev => prev.filter(i => i !== url))
+  }
+
+  // reset images when opening add modal
+  const openAddModal = () => {
+    setEditProduct(null)
+    setImages([])
+    setForm({ name:'', category:'favours', price:'', description:'', stock_status:'in_stock', visibility:'draft', is_favour_item: false })
+    setProductModal(true)
+  }
   const c = {
     wrap:    { display:'flex', height:'100vh', overflow:'hidden', background:'#080f08', color:'#fff', fontFamily:'var(--font-cormorant)' } as React.CSSProperties,
     sidebar: { width:'196px', flexShrink:0, borderRight:'0.5px solid rgba(212,175,110,0.12)', display:'flex', flexDirection:'column' as const, background:'#060d06' },
@@ -225,7 +309,7 @@ export default function AdminPage() {
           <div style={{ fontFamily:'var(--font-cinzel)', fontSize:'13px', color:'#fff', fontWeight:500 }}>
             {panel.charAt(0).toUpperCase() + panel.slice(1)}
           </div>
-          {panel === 'products' && btn('gold', () => { setEditProduct(null); setForm({ name:'', category:'favours', price:'', description:'', stock_status:'in_stock', visibility:'draft', is_favour_item: false }); setProductModal(true) }, '+ Add product')}
+          {panel === 'products' && btn('gold', openAddModal, '+ Add product')}
         </div>
 
         <div style={c.content}>
@@ -429,6 +513,35 @@ export default function AdminPage() {
               <div><label style={c.label}>Product name</label><input type="text" value={form.name} onChange={e => setForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Lindor Milk Chocolate Truffle" style={c.input}/></div>
               <div><label style={c.label}>Price ($)</label><input type="number" value={form.price} onChange={e => setForm(f=>({...f,price:e.target.value}))} placeholder="0.50" style={c.input}/></div>
               <div><label style={c.label}>Description</label><textarea value={form.description} onChange={e => setForm(f=>({...f,description:e.target.value}))} placeholder="Brief description…" style={{ ...c.input, resize:'vertical' as const, minHeight:'70px', lineHeight:'1.5' }}/></div>
+
+              {/* Image upload */}
+              <div>
+                <label style={c.label}>Product photos</label>
+                <div style={{ display:'flex', gap:'8px', flexWrap:'wrap', marginBottom:'8px' }}>
+                  {images.map((url, i) => (
+                    <div key={url} style={{ position:'relative', width:'72px', height:'72px', borderRadius:'8px', overflow:'hidden', border:'0.5px solid rgba(212,175,110,0.2)', flexShrink:0 }}>
+                      <img src={url} alt={`Photo ${i+1}`} style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                      <button onClick={() => removeImage(url)} style={{ position:'absolute', top:'3px', right:'3px', width:'18px', height:'18px', borderRadius:'50%', background:'rgba(226,75,74,0.9)', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:'12px', lineHeight:1 }}>×</button>
+                      {i === 0 && <div style={{ position:'absolute', bottom:'2px', left:'3px', fontFamily:'var(--font-cinzel)', fontSize:'6px', letterSpacing:'0.06em', color:'var(--gold)', background:'rgba(0,0,0,0.6)', padding:'1px 4px', borderRadius:'3px' }}>MAIN</div>}
+                    </div>
+                  ))}
+                  <label style={{ width:'72px', height:'72px', borderRadius:'8px', border:'0.5px dashed rgba(212,175,110,0.3)', display:'flex', flexDirection:'column' as const, alignItems:'center', justifyContent:'center', cursor: uploading ? 'not-allowed' : 'pointer', background:'rgba(255,255,255,0.03)', flexShrink:0, gap:'4px' }}>
+                    {uploading ? (
+                      <div style={{ fontFamily:'var(--font-cinzel)', fontSize:'8px', color:'rgba(255,255,255,0.4)', textAlign:'center' }}>Uploading…</div>
+                    ) : (
+                      <>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="#d4af6e" strokeWidth="1.5" strokeLinecap="round" opacity="0.5"/></svg>
+                        <span style={{ fontFamily:'var(--font-cinzel)', fontSize:'7px', letterSpacing:'0.08em', color:'rgba(255,255,255,0.3)' }}>Add photo</span>
+                      </>
+                    )}
+                    <input type="file" accept="image/*" style={{ display:'none' }} disabled={uploading}
+                      onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f) }}/>
+                  </label>
+                </div>
+                <div style={{ fontFamily:'var(--font-cormorant)', fontSize:'11px', color:'rgba(255,255,255,0.25)', fontStyle:'italic' }}>
+                  First photo is the main product image. Max 5 photos. JPG or PNG.
+                </div>
+              </div>
               <div>
                 <label style={c.label}>Category</label>
                 <select value={form.category} onChange={e => setForm(f=>({...f,category:e.target.value}))} style={c.input}>

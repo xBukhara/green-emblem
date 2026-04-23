@@ -35,17 +35,42 @@ export default function DashboardPage() {
       ])
 
       // Load campaigns matching by organiser_id OR request email
-      const { data: allCampaigns } = await supabase
+      // First get all request IDs for this user's email
+      const { data: userRequests } = await supabase
+        .from('campaign_requests')
+        .select('id')
+        .eq('email', user.email)
+
+      const requestIds = (userRequests || []).map((r: any) => r.id)
+
+      let userCampaigns: any[] = []
+      if (requestIds.length > 0) {
+        const { data: campaignsByRequest } = await supabase
+          .from('campaigns')
+          .select('*')
+          .in('request_id', requestIds)
+          .order('created_at', { ascending: false })
+        userCampaigns = campaignsByRequest || []
+      }
+
+      // Also check by organiser_id
+      const { data: campaignsByOrganiser } = await supabase
         .from('campaigns')
-        .select('*, campaign_requests(email)')
+        .select('*')
+        .eq('organiser_id', user.id)
         .order('created_at', { ascending: false })
-      const userCampaigns = (allCampaigns || []).filter((c: any) =>
-        c.organiser_id === user.id || c.campaign_requests?.email === user.email
-      )
+
+      // Merge and deduplicate
+      const allUserCampaigns = [...userCampaigns]
+      for (const c of (campaignsByOrganiser || [])) {
+        if (!allUserCampaigns.find((x: any) => x.id === c.id)) {
+          allUserCampaigns.push(c)
+        }
+      }
 
       setProfile(profileRes.data)
       setDonations(donationsRes.data || [])
-      setCampaigns(userCampaigns)
+      setCampaigns(allUserCampaigns)
       setRequests(requestsRes.data || [])
       setLoading(false)
     })
@@ -59,14 +84,19 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!user) return
     const interval = setInterval(async () => {
-      const { data: allCampaigns } = await supabase
-        .from('campaigns')
-        .select('*, campaign_requests(email)')
-        .order('created_at', { ascending: false })
-      const userCampaigns = (allCampaigns || []).filter((c: any) =>
-        c.organiser_id === user.id || c.campaign_requests?.email === user.email
-      )
-      setCampaigns(userCampaigns)
+      const { data: userRequests } = await supabase
+        .from('campaign_requests').select('id').eq('email', user.email)
+      const requestIds = (userRequests || []).map((r: any) => r.id)
+      let refreshed: any[] = []
+      if (requestIds.length > 0) {
+        const { data } = await supabase.from('campaigns').select('*').in('request_id', requestIds).order('created_at', { ascending: false })
+        refreshed = data || []
+      }
+      const { data: byOrganiser } = await supabase.from('campaigns').select('*').eq('organiser_id', user.id)
+      for (const c of (byOrganiser || [])) {
+        if (!refreshed.find((x: any) => x.id === c.id)) refreshed.push(c)
+      }
+      setCampaigns(refreshed)
     }, 5 * 60 * 1000)
     return () => clearInterval(interval)
   }, [user])
