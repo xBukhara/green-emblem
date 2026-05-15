@@ -18,8 +18,18 @@ function SignInInner() {
   const supabase = createClient()
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.replace('/dashboard')
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('onboarding_complete')
+        .eq('id', user.id)
+        .single()
+      if (profile?.onboarding_complete) {
+        router.replace('/dashboard')
+      } else {
+        router.replace('/onboarding')
+      }
     })
   }, [])
 
@@ -29,7 +39,7 @@ function SignInInner() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: 'https://green-emblem.com/auth/confirm',
+        redirectTo: `${window.location.origin}/auth/callback`,
         queryParams: { access_type: 'offline', prompt: 'consent' },
         skipBrowserRedirect: false,
       },

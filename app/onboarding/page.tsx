@@ -56,36 +56,39 @@ export default function OnboardingPage() {
     }
     setSaving(true)
     setError('')
-    const { error: err } = await supabase.from('profiles').update({
-      first_name: form.first_name,
-      last_name: form.last_name,
-      full_name: `${form.first_name} ${form.last_name}`,
-      phone: form.phone || null,
-      address: {
-        line1: form.address_line1,
-        city: form.address_city,
-        state: form.address_state,
-        zip: form.address_zip,
-      },
-      local_mosque: form.local_mosque || null,
-      newsletter_opted_in: form.newsletter,
-      onboarding_complete: true,
-    }).eq('id', user.id)
 
-    if (err) { setError(err.message); setSaving(false); return }
+    try {
+      const res = await fetch('/api/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          first_name: form.first_name,
+          last_name: form.last_name,
+          phone: form.phone || null,
+          address: {
+            line1: form.address_line1,
+            city: form.address_city,
+            state: form.address_state,
+            zip: form.address_zip,
+          },
+          local_mosque: form.local_mosque || null,
+          newsletter: form.newsletter,
+        }),
+      })
 
-    // Add to newsletter if opted in
-    if (form.newsletter) {
-      await supabase.from('newsletter_subscribers').upsert({
-        email: user.email,
-        first_name: form.first_name,
-        last_name: form.last_name,
-        source: 'onboarding',
-        is_active: true,
-      }, { onConflict: 'email' })
+      const result = await res.json()
+
+      if (!res.ok) {
+        setError(result.error || 'Something went wrong. Please try again.')
+        setSaving(false)
+        return
+      }
+
+      router.push('/dashboard?welcome=1')
+    } catch (e) {
+      setError('Network error. Please check your connection and try again.')
+      setSaving(false)
     }
-
-    router.push('/dashboard?welcome=1')
   }
 
   const inp: React.CSSProperties = {
