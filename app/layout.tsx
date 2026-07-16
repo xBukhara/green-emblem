@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Cinzel, Cormorant_Garamond, Noto_Naskh_Arabic } from 'next/font/google'
+import { Cinzel, Cormorant_Garamond, Noto_Naskh_Arabic, Inter } from 'next/font/google'
 import './globals.css'
 
 const cinzel = Cinzel({
@@ -24,6 +24,13 @@ const arabic = Noto_Naskh_Arabic({
   display: 'swap',
 })
 
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-inter',
+  display: 'swap',
+})
+
 export const metadata: Metadata = {
   title: {
     default: 'Green Emblem — Islamic Events, Giving & Community',
@@ -33,20 +40,22 @@ export const metadata: Metadata = {
   keywords: ['Islamic events', 'Muslim wedding favours', 'Nikkah', 'Walima', 'Aqiqah', 'halal', 'sadaqah'],
   openGraph: {
     title: 'Green Emblem',
-    description: 'Islamic Events, Giving & Community',
+    description: 'Faith. Strength. Purpose.',
     url: 'https://green-emblem.com',
     siteName: 'Green Emblem',
     locale: 'en_US',
     type: 'website',
+    images: ['/logo-full.png'],
   },
   icons: {
-    icon: '/favicon.ico',
+    icon: '/icon.png',
+    apple: '/apple-icon.png',
   },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${cinzel.variable} ${cormorant.variable} ${arabic.variable}`}>
+    <html lang="en" className={`${cinzel.variable} ${cormorant.variable} ${arabic.variable} ${inter.variable}`}>
       <body>{children}</body>
     </html>
   )

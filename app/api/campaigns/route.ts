@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     event_date:     event_date || null,
     location:       location || null,
     theme:          theme || {},
-    status:         'pending', // Admin activates
+    status:         'active', // Live immediately — no approval step
     qr_tier:        req.qr_tier,
   }).select().single()
 
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
         event_date: event_date || null,
         location: location || null,
         theme: theme || {},
-        status: 'pending',
+        status: 'active',
         qr_tier: req.qr_tier,
       }).select().single()
       if (err2) return NextResponse.json({ error: err2.message }, { status: 500 })

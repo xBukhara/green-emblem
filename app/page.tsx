@@ -1,6 +1,8 @@
 'use client'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import LogoIntro from '@/components/LogoIntro'
+import ScrollReveal from '@/components/ScrollReveal'
 import Link from 'next/link'
 
 const GoldDivider = () => (
@@ -14,6 +16,8 @@ const GoldDivider = () => (
 export default function HomePage() {
   return (
     <>
+      <LogoIntro />
+      <ScrollReveal />
       <div className="bg-tile" aria-hidden="true"/>
       <Nav />
 
@@ -35,21 +39,11 @@ export default function HomePage() {
 
           <div className="fade-up" style={{ animationDelay:'0.2s' }}>
             {/* Logo mark */}
-            <svg width="72" height="72" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" style={{ marginBottom:'28px' }}>
-              <rect x="42" y="42" width="136" height="136" rx="6" fill="none" stroke="#c8a050" strokeWidth="2" transform="rotate(0 110 110)"/>
-              <rect x="42" y="42" width="136" height="136" rx="6" fill="none" stroke="#c8a050" strokeWidth="2" transform="rotate(45 110 110)"/>
-              <polygon points="110,42 158,42 190,74 190,146 158,178 62,178 30,146 30,74 62,42" fill="#2e6b2e" stroke="#c8a050" strokeWidth="2"/>
-              <polygon points="110,52 152,52 180,80 180,140 152,168 68,168 40,140 40,80 68,52" fill="none" stroke="#d4af6e" strokeWidth="1" opacity="0.4"/>
-              <circle cx="103" cy="104" r="44" fill="#d4af6e"/>
-              <circle cx="117" cy="96" r="37" fill="#2e6b2e"/>
-              <g transform="translate(158,82)"><polygon points="0,-16 3.8,-6.2 14.8,-5 6.8,3 9.4,14 0,8.2 -9.4,14 -6.8,3 -14.8,-5 -3.8,-6.2" fill="#d4af6e"/></g>
-            </svg>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-full.png" alt="Green Emblem — Faith. Strength. Purpose." width={190} style={{ marginBottom:'24px', display:'block', marginLeft:'auto', marginRight:'auto' }}/>
           </div>
 
           <div className="fade-up" style={{ animationDelay:'0.3s' }}>
-            <div style={{ fontFamily:'var(--font-cinzel)', fontSize:'11px', letterSpacing:'0.32em', color:'var(--gold)', marginBottom:'20px', opacity:0.8 }}>
-              GREEN EMBLEM
-            </div>
             <h1 style={{ fontFamily:'var(--font-cinzel)', fontSize:'clamp(36px,7vw,72px)', fontWeight:500, lineHeight:1.08, color:'#fff', marginBottom:'20px', letterSpacing:'-0.01em' }}>
               Every celebration<br/>
               <span style={{ color:'var(--gold)' }}>honoured with</span><br/>
@@ -73,7 +67,7 @@ export default function HomePage() {
         </section>
 
         {/* ── 4 PILLARS ── */}
-        <section style={{ padding:'80px 24px', maxWidth:'1100px', margin:'0 auto' }}>
+        <section className="reveal" style={{ padding:'80px 24px', maxWidth:'1100px', margin:'0 auto' }}>
           <div style={{ textAlign:'center', marginBottom:'52px' }}>
             <div style={{ fontFamily:'var(--font-cinzel)', fontSize:'9px', letterSpacing:'0.28em', color:'var(--gold)', marginBottom:'14px' }}>
               What we do
@@ -83,7 +77,7 @@ export default function HomePage() {
             </h2>
           </div>
 
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:'16px' }}>
+          <div className="reveal reveal-stagger" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:'16px' }}>
             {[
               {
                 href: '/sadaqah',
@@ -123,7 +117,7 @@ export default function HomePage() {
               },
             ].map(({ href, arabic, title, subtitle, desc, cta, accent }) => (
                 <Link key={href} href={href} style={{ textDecoration:'none' }}>
-                  <div className="pillar-card" style={{ background:'rgba(15,31,15,0.55)', border:'0.5px solid rgba(212,175,110,0.12)', borderRadius:'16px', padding:'28px 24px', height:'100%', transition:'border-color 0.2s, transform 0.2s', cursor:'pointer' }}>
+                  <div className="pillar-card hover-lift" style={{ background:'rgba(15,31,15,0.55)', border:'0.5px solid rgba(212,175,110,0.12)', borderRadius:'16px', padding:'28px 24px', height:'100%', transition:'border-color 0.2s, transform 0.2s', cursor:'pointer' }}>
                   <div style={{ fontFamily:'var(--font-arabic)', fontSize:'20px', color:accent, marginBottom:'14px', opacity:0.7 }} lang="ar">{arabic}</div>
                   <div style={{ fontFamily:'var(--font-cinzel)', fontSize:'14px', fontWeight:500, color:'#fff', marginBottom:'4px' }}>{title}</div>
                   <div style={{ fontFamily:'var(--font-cormorant)', fontSize:'13px', color:'rgba(255,255,255,0.4)', fontStyle:'italic', marginBottom:'14px' }}>{subtitle}</div>
@@ -138,7 +132,7 @@ export default function HomePage() {
         </section>
 
         {/* ── SADAQAH HIGHLIGHT ── */}
-        <section style={{ padding:'60px 24px', background:'rgba(26,61,26,0.2)', borderTop:'0.5px solid rgba(212,175,110,0.08)', borderBottom:'0.5px solid rgba(212,175,110,0.08)' }}>
+        <section className="reveal" style={{ padding:'60px 24px', background:'rgba(26,61,26,0.2)', borderTop:'0.5px solid rgba(212,175,110,0.08)', borderBottom:'0.5px solid rgba(212,175,110,0.08)' }}>
           <div style={{ maxWidth:'800px', margin:'0 auto', textAlign:'center' }}>
             <GoldDivider />
             <div style={{ margin:'32px 0' }}>
@@ -160,7 +154,7 @@ export default function HomePage() {
         </section>
 
         {/* ── AFFILIATE CTA ── */}
-        <section style={{ padding:'80px 24px', maxWidth:'700px', margin:'0 auto', textAlign:'center' }}>
+        <section className="reveal" style={{ padding:'80px 24px', maxWidth:'700px', margin:'0 auto', textAlign:'center' }}>
           <div style={{ fontFamily:'var(--font-cinzel)', fontSize:'9px', letterSpacing:'0.28em', color:'var(--gold)', marginBottom:'14px' }}>
             For decorators
           </div>

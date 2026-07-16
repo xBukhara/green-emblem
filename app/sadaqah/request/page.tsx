@@ -2,16 +2,15 @@
 import { useState } from 'react'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
-import { createClient } from '@/lib/supabase/client'
 
 export default function SadaqahRequestPage() {
-  const supabase = createClient()
   const [form, setForm] = useState({
     first_name: '', last_name: '', email: '', phone: '',
     event_type: '', honoree_names: '', event_date: '',
     guest_count: '', location: '', qr_tier: 'free', message: '',
   })
   const [submitted, setSubmitted] = useState(false)
+  const [builderUrl, setBuilderUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -25,37 +24,23 @@ export default function SadaqahRequestPage() {
     setLoading(true)
     setError('')
 
-    const { error: err } = await supabase.from('campaign_requests').insert({
-      first_name: form.first_name,
-      last_name: form.last_name,
-      email: form.email,
-      phone: form.phone || null,
-      event_type: form.event_type,
-      honoree_names: form.honoree_names,
-      event_date: form.event_date || null,
-      guest_count: form.guest_count ? parseInt(form.guest_count) : null,
-      location: form.location || null,
-      qr_tier: form.qr_tier,
-      message: form.message || null,
-      status: 'pending',
-    })
-
-    if (err) {
-      setError('Something went wrong. Please try again.')
-      setLoading(false)
-      return
-    }
-
-    // Also send notification to admin via API
     try {
-      await fetch('/api/admin/notify-campaign-request', {
+      const res = await fetch('/api/campaigns/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: form.email, honoree_names: form.honoree_names, event_type: form.event_type }),
+        body: JSON.stringify(form),
       })
-    } catch {}
-
-    setSubmitted(true)
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Something went wrong. Please try again.')
+        setLoading(false)
+        return
+      }
+      setBuilderUrl(data.builder_url || '')
+      setSubmitted(true)
+    } catch {
+      setError('Network error. Please check your connection and try again.')
+    }
     setLoading(false)
   }
 
@@ -84,9 +69,14 @@ export default function SadaqahRequestPage() {
           <p style={{ fontFamily: 'var(--font-cormorant)', fontSize: '17px', fontStyle: 'italic', color: 'rgba(255,255,255,0.55)', lineHeight: 1.7, marginBottom: '8px' }}>
             Your campaign request for <strong style={{ color: '#fff' }}>{form.honoree_names}</strong> has been received.
           </p>
-          <p style={{ fontFamily: 'var(--font-cormorant)', fontSize: '15px', fontStyle: 'italic', color: 'rgba(255,255,255,0.4)', lineHeight: 1.7, marginBottom: '28px' }}>
-            We'll review it within 48 hours and send you a magic link to build your campaign page, in sha Allah.
+          <p style={{ fontFamily: 'var(--font-cormorant)', fontSize: '15px', fontStyle: 'italic', color: 'rgba(255,255,255,0.4)', lineHeight: 1.7, marginBottom: '24px' }}>
+            Your campaign is ready to design right now. We've also emailed you this link so you can come back any time within 7 days.
           </p>
+          {builderUrl && (
+            <a href={builderUrl} className="btn-gold" style={{ marginBottom: '28px', textDecoration: 'none' }}>
+              Design your campaign now →
+            </a>
+          )}
           <div style={{ fontFamily: 'var(--font-arabic)', fontSize: '20px', color: 'var(--gold)', opacity: 0.6, direction: 'rtl' }} lang="ar">
             تَقَبَّلَ اللَّهُ مِنَّا وَمِنكُمْ
           </div>
@@ -219,7 +209,7 @@ export default function SadaqahRequestPage() {
             {loading ? 'Submitting…' : 'Submit campaign request'}
           </button>
           <p style={{ fontFamily: 'var(--font-cormorant)', fontSize: '12px', color: 'rgba(255,255,255,0.25)', textAlign: 'center', marginTop: '10px', fontStyle: 'italic' }}>
-            Reviewed personally within 48 hours. You'll receive a magic link to build your campaign, in sha Allah.
+            No waiting, no approval queue — you'll get instant access to the design studio, plus a link by email.
           </p>
         </div>
       </main>

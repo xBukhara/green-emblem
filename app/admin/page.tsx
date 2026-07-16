@@ -2,8 +2,9 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { FONT_PAIRS, PATTERNS, OVERLAYS } from '@/lib/campaign-design'
 
-const PANELS = ['overview','campaigns','requests','orders','users','affiliates','newsletter'] as const
+const PANELS = ['overview','campaigns','requests','templates','orders','users','affiliates','newsletter'] as const
 type Panel = typeof PANELS[number]
 
 export default function AdminPage() {
@@ -21,6 +22,14 @@ export default function AdminPage() {
   const [users, setUsers] = useState<any[]>([])
   const [affiliates, setAffiliates] = useState<any[]>([])
   const [subscribers, setSubscribers] = useState<any[]>([])
+  const [templates, setTemplates] = useState<any[]>([])
+
+  // Template editor
+  const [tplModal, setTplModal] = useState(false)
+  const [tplEdit, setTplEdit] = useState<any>(null)
+  const emptyTpl = { name:'', bg:'#0f1f0f', accent:'#d4af6e', text:'#f5f0e6', font_pair:'cinzel', pattern:'star8', overlay:'frame', pattern_opacity:0.07, published:true, sort_order:0 }
+  const [tplForm, setTplForm] = useState<any>(emptyTpl)
+  const [tplSaving, setTplSaving] = useState(false)
 
   // Newsletter composer
   const [newsletterSubject, setNewsletterSubject] = useState('')
@@ -45,7 +54,7 @@ export default function AdminPage() {
   }, [])
 
   const loadAll = async () => {
-    const [campaignsRes, requestsRes, ordersRes, usersRes, affiliatesRes, subscribersRes, donationsRes] = await Promise.all([
+    const [campaignsRes, requestsRes, ordersRes, usersRes, affiliatesRes, subscribersRes, donationsRes, templatesRes] = await Promise.all([
       supabase.from('campaigns').select('*').order('created_at', { ascending: false }),
       supabase.from('campaign_requests').select('*').order('submitted_at', { ascending: false }),
       supabase.from('orders').select('*').order('created_at', { ascending: false }),
@@ -53,6 +62,7 @@ export default function AdminPage() {
       supabase.from('affiliates').select('*').order('created_at', { ascending: false }),
       supabase.from('newsletter_subscribers').select('*').eq('is_active', true).order('subscribed_at', { ascending: false }),
       supabase.from('donations').select('amount,meals_funded,confirmed').eq('confirmed', true),
+      supabase.from('campaign_templates').select('*').order('sort_order', { ascending: true }),
     ])
 
     const camps = campaignsRes.data || []
@@ -66,6 +76,7 @@ export default function AdminPage() {
     setUsers(usersRes.data || [])
     setAffiliates(affiliatesRes.data || [])
     setSubscribers(subs)
+    setTemplates(templatesRes.data || [])
 
     setStats({
       campaigns: camps.length,
@@ -113,6 +124,38 @@ export default function AdminPage() {
     setTimeout(() => { setNewsletterSent(false); setNewsletterSubject(''); setNewsletterBody('') }, 3000)
   }
 
+
+  const openTplModal = (t?: any) => {
+    setTplEdit(t || null)
+    setTplForm(t ? { name:t.name, bg:t.bg, accent:t.accent, text:t.text, font_pair:t.font_pair, pattern:t.pattern, overlay:t.overlay, pattern_opacity:t.pattern_opacity, published:t.published, sort_order:t.sort_order||0 } : emptyTpl)
+    setTplModal(true)
+  }
+
+  const saveTemplate = async () => {
+    if (!tplForm.name) return
+    setTplSaving(true)
+    if (tplEdit) {
+      const { data } = await supabase.from('campaign_templates').update(tplForm).eq('id', tplEdit.id).select().single()
+      if (data) setTemplates(ts => ts.map(t => t.id === tplEdit.id ? data : t))
+    } else {
+      const { data } = await supabase.from('campaign_templates').insert(tplForm).select().single()
+      if (data) setTemplates(ts => [...ts, data])
+    }
+    setTplSaving(false)
+    setTplModal(false)
+  }
+
+  const deleteTemplate = async (id: string) => {
+    if (!confirm('Delete this template? Campaigns already using it are unaffected.')) return
+    await supabase.from('campaign_templates').delete().eq('id', id)
+    setTemplates(ts => ts.filter(t => t.id !== id))
+  }
+
+  const toggleTemplatePublished = async (t: any) => {
+    const { data } = await supabase.from('campaign_templates').update({ published: !t.published }).eq('id', t.id).select().single()
+    if (data) setTemplates(ts => ts.map(x => x.id === t.id ? data : x))
+  }
+
   // ── Styles ──────────────────────────────────────────────────────────────────
   const c = {
     page: { minHeight:'100dvh', background:'#080f08', display:'grid', gridTemplateColumns:'220px 1fr' } as React.CSSProperties,
@@ -141,6 +184,7 @@ export default function AdminPage() {
     {id:'overview',label:'Overview',icon:'◈'},
     {id:'campaigns',label:'Campaigns',icon:'◉'},
     {id:'requests',label:'Sadaqah Requests',icon:'◎'},
+    {id:'templates',label:'Design Templates',icon:'▦'},
     {id:'orders',label:'Orders',icon:'◐'},
     {id:'users',label:'Users',icon:'◑'},
     {id:'affiliates',label:'Affiliates',icon:'◒'},
@@ -278,18 +322,120 @@ export default function AdminPage() {
                       <td style={{...c.td,fontSize:'11px',color:'rgba(255,255,255,0.35)'}}>{req.event_date||'—'}</td>
                       <td style={c.td}><span style={c.badge(req.status==='approved'?'#1D9E75':'#d4a017')}>{req.status}</span></td>
                       <td style={c.td}>
-                        {req.status !== 'approved' && (
-                          <button style={c.btn('gold')} onClick={() => sendMagicLink(req.id)}>
-                            Send builder link
-                          </button>
-                        )}
-                        {req.status === 'approved' && <span style={{fontFamily:'Georgia,serif',fontSize:'11px',color:'rgba(255,255,255,0.25)',fontStyle:'italic'}}>Link sent</span>}
+                        <button style={c.btn('gold')} onClick={() => sendMagicLink(req.id)}>
+                          Resend builder link
+                        </button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* ── DESIGN TEMPLATES ── */}
+        {panel === 'templates' && (
+          <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
+            {sectionTitle(`Design templates (${templates.length})`)}
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <p style={{fontFamily:'Georgia,serif',fontSize:'12px',color:'rgba(255,255,255,0.4)',fontStyle:'italic'}}>
+                Published templates appear in the campaign design studio gallery for all users.
+              </p>
+              <button style={c.btn('gold')} onClick={() => openTplModal()}>+ New template</button>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(210px,1fr))',gap:'14px'}}>
+              {templates.length === 0 && (
+                <div style={{...c.card,gridColumn:'1/-1',textAlign:'center',padding:'40px',color:'rgba(255,255,255,0.3)',fontFamily:'Georgia,serif',fontStyle:'italic'}}>
+                  No custom templates yet. The 8 built-in classics always show in the studio — templates you add here appear alongside them.
+                </div>
+              )}
+              {templates.map(t => (
+                <div key={t.id} style={{...c.card,padding:0,overflow:'hidden'}}>
+                  <div style={{position:'relative',height:'90px',background:t.bg,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'5px'}}>
+                    <div style={{width:'46%',height:'6px',borderRadius:'3px',background:t.accent}}/>
+                    <div style={{width:'64%',height:'3px',borderRadius:'2px',background:`${t.text}55`}}/>
+                    <div style={{width:'30%',height:'9px',borderRadius:'5px',background:t.accent,marginTop:'3px'}}/>
+                    {!t.published && <span style={{position:'absolute',top:'7px',right:'7px',...c.badge('#d4a017')}}>draft</span>}
+                  </div>
+                  <div style={{padding:'12px 14px'}}>
+                    <div style={{fontFamily:'Georgia,serif',fontSize:'13px',color:'#fff',marginBottom:'2px'}}>{t.name}</div>
+                    <div style={{fontFamily:'Georgia,serif',fontSize:'10px',color:'rgba(255,255,255,0.3)',marginBottom:'10px'}}>{t.font_pair} · {t.pattern} · {t.overlay}</div>
+                    <div style={{display:'flex',gap:'6px',flexWrap:'wrap'}}>
+                      <button style={c.btn()} onClick={() => openTplModal(t)}>Edit</button>
+                      <button style={c.btn('green')} onClick={() => toggleTemplatePublished(t)}>{t.published ? 'Unpublish' : 'Publish'}</button>
+                      <button style={c.btn('red')} onClick={() => deleteTemplate(t.id)}>Delete</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Editor modal */}
+            {tplModal && (
+              <div style={{position:'fixed',inset:0,zIndex:200,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center',padding:'24px'}} onClick={() => setTplModal(false)}>
+                <div style={{...c.card,width:'100%',maxWidth:'520px',maxHeight:'86dvh',overflowY:'auto',padding:'24px'}} onClick={e => e.stopPropagation()}>
+                  <div style={{fontFamily:'Georgia,serif',fontSize:'11px',letterSpacing:'0.18em',color:'#d4af6e',marginBottom:'18px'}}>{tplEdit ? 'EDIT TEMPLATE' : 'NEW TEMPLATE'}</div>
+
+                  {/* Live mini preview */}
+                  <div style={{position:'relative',height:'110px',background:tplForm.bg,borderRadius:'10px',marginBottom:'18px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'6px',border:'0.5px solid rgba(255,255,255,0.1)'}}>
+                    <div style={{width:'40%',height:'7px',borderRadius:'4px',background:tplForm.accent}}/>
+                    <div style={{width:'58%',height:'4px',borderRadius:'2px',background:`${tplForm.text}55`}}/>
+                    <div style={{width:'26%',height:'11px',borderRadius:'6px',background:tplForm.accent,marginTop:'4px'}}/>
+                  </div>
+
+                  <div style={{display:'flex',flexDirection:'column',gap:'13px'}}>
+                    <div>
+                      <label style={{fontFamily:'Georgia,serif',fontSize:'9px',letterSpacing:'0.16em',color:'rgba(255,255,255,0.35)',display:'block',marginBottom:'6px'}}>NAME</label>
+                      <input type="text" value={tplForm.name} onChange={e => setTplForm({...tplForm,name:e.target.value})} placeholder="e.g. Ramadan Nights" style={c.inp}/>
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'10px'}}>
+                      {[['bg','BACKGROUND'],['accent','ACCENT'],['text','TEXT']].map(([k,lab]) => (
+                        <div key={k}>
+                          <label style={{fontFamily:'Georgia,serif',fontSize:'9px',letterSpacing:'0.16em',color:'rgba(255,255,255,0.35)',display:'block',marginBottom:'6px'}}>{lab}</label>
+                          <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                            <input type="color" className="ge-color" value={tplForm[k]} onChange={e => setTplForm({...tplForm,[k]:e.target.value})}/>
+                            <span style={{fontFamily:'Georgia,serif',fontSize:'10px',color:'rgba(255,255,255,0.4)',textTransform:'uppercase'}}>{tplForm[k]}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
+                      <div>
+                        <label style={{fontFamily:'Georgia,serif',fontSize:'9px',letterSpacing:'0.16em',color:'rgba(255,255,255,0.35)',display:'block',marginBottom:'6px'}}>FONT PAIR</label>
+                        <select value={tplForm.font_pair} onChange={e => setTplForm({...tplForm,font_pair:e.target.value})} style={{...c.inp,cursor:'pointer'}}>
+                          {FONT_PAIRS.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{fontFamily:'Georgia,serif',fontSize:'9px',letterSpacing:'0.16em',color:'rgba(255,255,255,0.35)',display:'block',marginBottom:'6px'}}>PATTERN</label>
+                        <select value={tplForm.pattern} onChange={e => setTplForm({...tplForm,pattern:e.target.value})} style={{...c.inp,cursor:'pointer'}}>
+                          {PATTERNS.map(pt => <option key={pt.id} value={pt.id}>{pt.label}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{fontFamily:'Georgia,serif',fontSize:'9px',letterSpacing:'0.16em',color:'rgba(255,255,255,0.35)',display:'block',marginBottom:'6px'}}>OVERLAY</label>
+                        <select value={tplForm.overlay} onChange={e => setTplForm({...tplForm,overlay:e.target.value})} style={{...c.inp,cursor:'pointer'}}>
+                          {OVERLAYS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{fontFamily:'Georgia,serif',fontSize:'9px',letterSpacing:'0.16em',color:'rgba(255,255,255,0.35)',display:'block',marginBottom:'6px'}}>PATTERN OPACITY — {(tplForm.pattern_opacity*100).toFixed(0)}%</label>
+                        <input type="range" className="ge-range" min={0.02} max={0.2} step={0.005} value={tplForm.pattern_opacity} onChange={e => setTplForm({...tplForm,pattern_opacity:parseFloat(e.target.value)})} style={{marginTop:'12px'}}/>
+                      </div>
+                    </div>
+                    <label style={{display:'flex',alignItems:'center',gap:'10px',cursor:'pointer',fontFamily:'Georgia,serif',fontSize:'12px',color:'rgba(255,255,255,0.6)'}}>
+                      <input type="checkbox" checked={tplForm.published} onChange={e => setTplForm({...tplForm,published:e.target.checked})}/>
+                      Published — visible in the studio gallery
+                    </label>
+                    <div style={{display:'flex',gap:'10px',marginTop:'6px'}}>
+                      <button style={{...c.btn(),flex:1,padding:'11px',background:'rgba(255,255,255,0.06)',color:'rgba(255,255,255,0.5)'}} onClick={() => setTplModal(false)}>Cancel</button>
+                      <button style={{...c.btn('gold'),flex:2,padding:'11px',opacity:tplSaving?0.6:1}} onClick={saveTemplate} disabled={tplSaving}>{tplSaving ? 'Saving…' : tplEdit ? 'Save changes' : 'Create template'}</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
