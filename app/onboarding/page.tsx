@@ -58,9 +58,22 @@ export default function OnboardingPage() {
     setError('')
 
     try {
+      // Refresh the session to ensure we have a live access token — mobile
+      // browsers can have a stale in-memory session after the OAuth redirect.
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        setError('Your session expired. Please sign in again.')
+        setSaving(false)
+        router.push('/auth/sign-in')
+        return
+      }
+
       const res = await fetch('/api/onboarding', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
           first_name: form.first_name,
           last_name: form.last_name,
