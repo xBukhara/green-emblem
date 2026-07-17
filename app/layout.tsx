@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     siteName: 'Green Emblem',
     locale: 'en_US',
     type: 'website',
-    images: ['/logo-full.png'],
+    images: ['/og-image.png'],
   },
   icons: {
     icon: '/icon.png',
