@@ -296,7 +296,7 @@ export default function AdminPage() {
                       <td style={{...c.td,display:'flex',gap:'6px',flexWrap:'wrap'}}>
                         {camp.status !== 'active' && <button style={c.btn('green')} onClick={() => updateCampaignStatus(camp.id,'active')}>Activate</button>}
                         {camp.status === 'active' && <button style={c.btn('red')} onClick={() => updateCampaignStatus(camp.id,'ended')}>End</button>}
-                        <a href={`/api/campaigns/${camp.slug}/qr`} download style={{...c.btn(), textDecoration:'none', display:'inline-block'}}>QR</a>
+                        <a href={`/api/campaigns/${camp.slug}/qr-card?format=png`} download style={{...c.btn(), textDecoration:'none', display:'inline-block'}}>QR</a>
                       </td>
                     </tr>
                   ))}

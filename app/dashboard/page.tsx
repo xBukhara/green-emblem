@@ -292,7 +292,7 @@ function DashboardInner() {
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                           {c.status === 'active' && <>
                             <a href={`/give/${c.slug}`} target="_blank" style={{ fontFamily: 'Georgia, serif', fontSize: '9px', letterSpacing: '0.1em', color: '#d4af6e', border: '0.5px solid rgba(212,175,110,0.35)', padding: '7px 12px', borderRadius: '7px', textDecoration: 'none' }}>View live</a>
-                            <a href={`/api/campaigns/${c.slug}/qr`} download style={{ fontFamily: 'Georgia, serif', fontSize: '9px', letterSpacing: '0.1em', color: '#0f1f0f', background: '#d4af6e', padding: '7px 12px', borderRadius: '7px', textDecoration: 'none' }}>QR code</a>
+                            <a href={`/api/campaigns/${c.slug}/qr-card?format=png`} download style={{ fontFamily: 'Georgia, serif', fontSize: '9px', letterSpacing: '0.1em', color: '#0f1f0f', background: '#d4af6e', padding: '7px 12px', borderRadius: '7px', textDecoration: 'none' }}>QR code</a>
                             <button onClick={() => openEditor(c)} style={{ fontFamily: 'Georgia, serif', fontSize: '9px', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(255,255,255,0.1)', padding: '7px 12px', borderRadius: '7px', cursor: 'pointer' }}>
                               Edit design
                             </button>

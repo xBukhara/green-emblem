@@ -1,5 +1,5 @@
 'use client'
-import { Suspense, useState, useEffect } from 'react'
+import { Suspense, useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   FONT_PAIRS, fontPair, googleFontsHref,
@@ -141,6 +141,50 @@ function LivePreview({ d, honoreeNames, eventType, eventDate, greeting, verseTex
   )
 }
 
+// ── QR card preview (client-side approximation of the printable download) ──
+// The real card is generated server-side once the campaign has a live URL;
+// this mirrors that layout with a placeholder QR grid so users can judge
+// the print design before publishing.
+function QrCardPreview({ d, honoreeNames, eventType, eventDate }: {
+  d: Design; honoreeNames: string; eventType: string; eventDate: string
+}) {
+  const f = fontPair(d.font_pair)
+  const eventLine = [eventType, eventDate].filter(Boolean).join('  ·  ')
+  // Deterministic-looking placeholder QR grid (visual only, not a real code)
+  const cells = useMemo(() => {
+    const seed = (honoreeNames + eventType).length || 7
+    const grid: boolean[] = []
+    for (let i = 0; i < 17 * 17; i++) grid.push(((i * 928371 + seed * 131) % 7) < 3)
+    return grid
+  }, [honoreeNames, eventType])
+
+  return (
+    <div style={{
+      width: '100%', maxWidth: '320px', aspectRatio: '1000 / 1300', borderRadius: '18px',
+      background: d.bg, position: 'relative', overflow: 'hidden',
+      border: `2px solid ${d.accent}90`,
+      boxShadow: `0 24px 70px rgba(0,0,0,0.5)`,
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      padding: '7% 8% 6%', transition: 'background 0.5s, border-color 0.5s',
+    }}>
+      <PatternLayer type={d.pattern} accent={d.accent} opacity={d.pattern_opacity + 0.03}/>
+      <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', width: '100%' }}>
+        <div style={{ fontFamily: f.body, fontSize: '10px', letterSpacing: '0.3em', color: d.accent, opacity: 0.85, marginBottom: '6%' }}>BAAB AS-SADAQAH</div>
+        <div style={{ fontFamily: f.heading, fontSize: 'clamp(16px,6vw,26px)', fontWeight: 600, color: d.text, marginBottom: '2%', lineHeight: 1.15 }}>{honoreeNames || 'Your Names Here'}</div>
+        {eventLine && <div style={{ fontFamily: f.body, fontSize: '9px', letterSpacing: '0.15em', color: `${d.text}99`, marginBottom: '5%' }}>{eventLine.toUpperCase()}</div>}
+        <div style={{ fontFamily: f.body, fontSize: '10px', fontStyle: 'italic', color: `${d.text}b0`, marginBottom: '7%' }}>Scan to give sadaqah in our honour</div>
+      </div>
+      <div style={{ position: 'relative', zIndex: 2, background: '#faf8f2', borderRadius: '12px', border: `2px solid ${d.accent}`, padding: '6%', width: '58%', aspectRatio: '1/1', display: 'grid', gridTemplateColumns: 'repeat(17, 1fr)', gap: '1px' }}>
+        {cells.map((on, i) => <div key={i} style={{ background: on ? '#14210f' : 'transparent' }}/>)}
+      </div>
+      <div style={{ position: 'relative', zIndex: 2, marginTop: 'auto', textAlign: 'center' }}>
+        <div style={{ fontFamily: f.heading, fontSize: '11px', letterSpacing: '0.3em', color: d.accent, marginTop: '8%' }}>GREEN ★ EMBLEM</div>
+        <div style={{ fontFamily: f.body, fontSize: '8px', color: `${d.text}66`, marginTop: '3px' }}>green-emblem.com</div>
+      </div>
+    </div>
+  )
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 export default function CampaignBuilderPage() {
   return (
@@ -164,6 +208,7 @@ function DesignStudio() {
 
   const [tokenValid, setTokenValid] = useState<boolean | null>(null)
   const [tab, setTab] = useState<Tab>('templates')
+  const [previewMode, setPreviewMode] = useState<'give' | 'qr'>('give')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [created, setCreated] = useState(false)
@@ -302,7 +347,8 @@ function DesignStudio() {
             <button onClick={() => navigator.clipboard.writeText(`https://green-emblem.com/give/${createdSlug}`)} style={{ fontFamily: 'var(--font-inter)', fontSize: '11px', fontWeight: 600, color: d.accent, background: 'none', border: `0.5px solid ${d.accent}40`, borderRadius: '7px', padding: '6px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>Copy</button>
           </div>
           <a href={`/give/${createdSlug}`} target="_blank" style={{ display: 'block', width: '100%', fontFamily: 'var(--font-inter)', fontSize: '12px', fontWeight: 600, letterSpacing: '0.06em', color: '#0f1f0f', background: d.accent, borderRadius: '10px', padding: '14px', textDecoration: 'none', marginBottom: '10px', textAlign: 'center' }}>View live page ↗</a>
-          <a href={`/api/campaigns/${createdSlug}/qr`} download style={{ display: 'block', width: '100%', fontFamily: 'var(--font-inter)', fontSize: '12px', fontWeight: 500, color: d.accent, border: `0.5px solid ${d.accent}40`, borderRadius: '10px', padding: '14px', textDecoration: 'none', marginBottom: '10px', textAlign: 'center' }}>Download QR code (PNG)</a>
+          <a href={`/api/campaigns/${createdSlug}/qr-card?format=png`} download style={{ display: 'block', width: '100%', fontFamily: 'var(--font-inter)', fontSize: '12px', fontWeight: 500, color: d.accent, border: `0.5px solid ${d.accent}40`, borderRadius: '10px', padding: '14px', textDecoration: 'none', marginBottom: '8px', textAlign: 'center' }}>Download printable QR card (PNG)</a>
+          <a href={`/api/campaigns/${createdSlug}/qr-card?format=svg`} download style={{ display: 'block', width: '100%', fontFamily: 'var(--font-inter)', fontSize: '11px', fontWeight: 500, color: 'rgba(255,255,255,0.4)', textDecoration: 'none', marginBottom: '10px', textAlign: 'center' }}>Prefer vector? Download as SVG (best for print shops)</a>
           <a href="/dashboard" style={{ display: 'block', width: '100%', fontFamily: 'var(--font-inter)', fontSize: '12px', color: 'rgba(255,255,255,0.5)', borderRadius: '10px', padding: '10px', textDecoration: 'none', textAlign: 'center' }}>Go to my dashboard</a>
         </div>
       </div>
@@ -521,14 +567,33 @@ function DesignStudio() {
 
       {/* ── Live render canvas ── */}
       <div style={{
-        position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         padding: '40px 32px', background: `radial-gradient(ellipse at 60% 20%, ${d.accent}0a 0%, transparent 55%), #0b120b`,
         transition: 'background 0.6s', overflowY: 'auto', maxHeight: '100dvh',
       }}>
-        <div style={{ position: 'absolute', top: '20px', left: 0, right: 0, textAlign: 'center', fontFamily: 'var(--font-inter)', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)' }}>
-          Live preview — exactly what your guests will see
+        <div style={{ position: 'absolute', top: '20px', left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+          <div style={{ fontFamily: 'var(--font-inter)', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)' }}>
+            {previewMode === 'give' ? 'Live preview — exactly what your guests will see' : 'Printable QR card preview'}
+          </div>
+          <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: '100px', padding: '3px' }}>
+            {(['give', 'qr'] as const).map(m => (
+              <button key={m} onClick={() => setPreviewMode(m)} style={{
+                fontFamily: 'var(--font-inter)', fontSize: '10px', fontWeight: 500, letterSpacing: '0.04em',
+                padding: '6px 14px', borderRadius: '100px', border: 'none', cursor: 'pointer',
+                background: previewMode === m ? d.accent : 'transparent',
+                color: previewMode === m ? d.bg : 'rgba(255,255,255,0.5)', transition: 'all 0.2s',
+              }}>
+                {m === 'give' ? 'Donation page' : 'QR card'}
+              </button>
+            ))}
+          </div>
         </div>
-        <LivePreview d={d} honoreeNames={honoreeNames} eventType={eventType} eventDate={eventDate} greeting={greeting} verseText={verseText}/>
+        <div style={{ marginTop: '56px' }}>
+          {previewMode === 'give'
+            ? <LivePreview d={d} honoreeNames={honoreeNames} eventType={eventType} eventDate={eventDate} greeting={greeting} verseText={verseText}/>
+            : <QrCardPreview d={d} honoreeNames={honoreeNames} eventType={eventType} eventDate={eventDate}/>
+          }
+        </div>
       </div>
 
       {/* Responsive: stack on mobile */}
