@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
   const base = `${honoree_names.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${new Date().getFullYear()}`
   const slug = base.replace(/^-+|-+$/g, '').substring(0, 60)
 
-  const { data: campaign, error } = await admin.from('campaigns').insert({
+  const insertPayload = {
     request_id:     req.id,
     slug,
     honoree_names,
@@ -39,21 +39,27 @@ export async function POST(request: NextRequest) {
     theme:          theme || {},
     status:         'active', // Live immediately — no approval step
     qr_tier:        req.qr_tier,
-  }).select().single()
+  }
+
+  let { data: campaign, error } = await admin.from('campaigns').insert(insertPayload).select().single()
+
+  // If the qr_tier column doesn't exist yet (migration not run), retry without it
+  // rather than blocking the user from publishing.
+  if (error?.message?.includes('qr_tier')) {
+    const { qr_tier, ...withoutQrTier } = insertPayload
+    ;({ data: campaign, error } = await admin.from('campaigns').insert(withoutQrTier).select().single())
+  }
 
   if (error) {
     if (error.code === '23505') {
       // Slug collision — append random suffix
-      const { data: campaign2, error: err2 } = await admin.from('campaigns').insert({
-        request_id: req.id,
-        slug: `${slug}-${Math.random().toString(36).slice(2, 6)}`,
-        honoree_names, event_type,
-        event_date: event_date || null,
-        location: location || null,
-        theme: theme || {},
-        status: 'active',
-        qr_tier: req.qr_tier,
-      }).select().single()
+      const retrySlug = `${slug}-${Math.random().toString(36).slice(2, 6)}`
+      const retryPayload = { ...insertPayload, slug: retrySlug }
+      let { data: campaign2, error: err2 } = await admin.from('campaigns').insert(retryPayload).select().single()
+      if (err2?.message?.includes('qr_tier')) {
+        const { qr_tier, ...withoutQrTier } = retryPayload
+        ;({ data: campaign2, error: err2 } = await admin.from('campaigns').insert(withoutQrTier).select().single())
+      }
       if (err2) return NextResponse.json({ error: err2.message }, { status: 500 })
       return NextResponse.json({ campaign: campaign2 }, { status: 201 })
     }

@@ -23,7 +23,14 @@ function OverlayFx({type,accent}:{type:string;accent:string}) {
   const base:React.CSSProperties={position:'absolute',inset:0,pointerEvents:'none',zIndex:1}
   if(type==='frame')return <div style={{...base,border:`1px solid ${accent}55`,margin:'14px',borderRadius:'16px'}}><div style={{position:'absolute',inset:'5px',border:`0.5px solid ${accent}30`,borderRadius:'12px'}}/></div>
   if(type==='arch')return <div style={{...base,background:`radial-gradient(ellipse 70% 55% at 50% 0%, ${accent}14 0%, transparent 65%)`}}/>
-  if(type==='corners')return <svg style={base} width="100%" height="100%"><g stroke={accent} strokeWidth="1.2" fill="none" opacity="0.7"><path d="M 14 46 Q 14 14 46 14"/><circle cx="22" cy="22" r="2.5" fill={accent}/></g></svg>
+  if(type==='corners')return (
+    <div style={base}>
+      <svg width="46" height="46" viewBox="0 0 46 46" style={{position:'absolute',top:'10px',left:'10px'}}><path d="M 0 32 Q 0 0 32 0" fill="none" stroke={accent} strokeWidth="1.2" opacity="0.7"/><circle cx="8" cy="8" r="2.5" fill={accent} opacity="0.8"/></svg>
+      <svg width="46" height="46" viewBox="0 0 46 46" style={{position:'absolute',top:'10px',right:'10px'}}><path d="M 46 32 Q 46 0 14 0" fill="none" stroke={accent} strokeWidth="1.2" opacity="0.7"/><circle cx="38" cy="8" r="2.5" fill={accent} opacity="0.8"/></svg>
+      <svg width="46" height="46" viewBox="0 0 46 46" style={{position:'absolute',bottom:'10px',left:'10px'}}><path d="M 0 14 Q 0 46 32 46" fill="none" stroke={accent} strokeWidth="1.2" opacity="0.7"/><circle cx="8" cy="38" r="2.5" fill={accent} opacity="0.8"/></svg>
+      <svg width="46" height="46" viewBox="0 0 46 46" style={{position:'absolute',bottom:'10px',right:'10px'}}><path d="M 46 14 Q 46 46 14 46" fill="none" stroke={accent} strokeWidth="1.2" opacity="0.7"/><circle cx="38" cy="38" r="2.5" fill={accent} opacity="0.8"/></svg>
+    </div>
+  )
   return <svg style={{...base,opacity:0.05}} width="100%" height="100%" viewBox="0 0 300 300" preserveAspectRatio="xMidYMid slice"><path d="M150 40 A95 95 0 1 0 150 260 A75 75 0 1 1 150 40" fill={accent}/></svg>
 }
 

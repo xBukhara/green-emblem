@@ -49,16 +49,25 @@ function OverlayLayer({ type, accent }: { type: string; accent: string }) {
       <div style={{ position: 'absolute', inset: '4px', border: `0.5px solid ${accent}30`, borderRadius: '11px' }}/>
     </div>
   )
-  if (type === 'corners') return (
-    <svg style={base} width="100%" height="100%">
-      {[[0,0,1,1],[1,0,-1,1],[0,1,1,-1],[1,1,-1,-1]].map(([x,y,sx,sy],i) => (
-        <g key={i} transform={`translate(${x===1?'100%':'0'},${y===1?'100%':'0'})`} style={{ transform: `translate(${x===1?'calc(100% - 0px)':'0px'}, ${y===1?'calc(100% - 0px)':'0px'})` }}>
-          <path d={`M ${14*(sx as number)} ${46*(sy as number)} Q ${14*(sx as number)} ${14*(sy as number)} ${46*(sx as number)} ${14*(sy as number)}`} transform={`translate(${x===1?-0:0},${y===1?-0:0})`} fill="none" stroke={accent} strokeWidth="1.2" opacity="0.7"/>
-          <circle cx={22*(sx as number)} cy={22*(sy as number)} r="2.5" fill={accent} opacity="0.8"/>
-        </g>
-      ))}
-    </svg>
-  )
+  if (type === 'corners') {
+    const corner = (sx: 1 | -1, sy: 1 | -1, posStyle: React.CSSProperties) => (
+      <svg key={`${sx}-${sy}`} width="46" height="46" viewBox="0 0 46 46" style={{ position: 'absolute', ...posStyle }}>
+        <path
+          d={`M ${sx === 1 ? 0 : 46} ${sy === 1 ? 32 : 14} Q ${sx === 1 ? 0 : 46} ${sy === 1 ? 0 : 46} ${sx === 1 ? 32 : 14} ${sy === 1 ? 0 : 46}`}
+          fill="none" stroke={accent} strokeWidth="1.2" opacity="0.7"
+        />
+        <circle cx={sx === 1 ? 8 : 38} cy={sy === 1 ? 8 : 38} r="2.5" fill={accent} opacity="0.8"/>
+      </svg>
+    )
+    return (
+      <div style={base}>
+        {corner(1, 1, { top: '10px', left: '10px' })}
+        {corner(-1, 1, { top: '10px', right: '10px' })}
+        {corner(1, -1, { bottom: '10px', left: '10px' })}
+        {corner(-1, -1, { bottom: '10px', right: '10px' })}
+      </div>
+    )
+  }
   if (type === 'arch') return (
     <div style={{ ...base, background: `radial-gradient(ellipse 70% 55% at 50% 0%, ${accent}14 0%, transparent 65%)` }}/>
   )
