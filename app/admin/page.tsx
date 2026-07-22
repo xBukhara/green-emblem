@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { FONT_PAIRS, PATTERNS, OVERLAYS } from '@/lib/campaign-design'
 
-const PANELS = ['overview','campaigns','requests','templates','orders','users','affiliates','newsletter'] as const
+const PANELS = ['overview','campaigns','requests','templates','orders','users','newsletter'] as const
 type Panel = typeof PANELS[number]
 
 export default function AdminPage() {
@@ -15,12 +15,11 @@ export default function AdminPage() {
   const [authorized, setAuthorized] = useState(false)
 
   // Data
-  const [stats, setStats] = useState({ campaigns:0, activeCampaigns:0, donations:0, totalRaised:0, mealsFunded:0, orders:0, orderRevenue:0, affiliates:0, connections:0, subscribers:0, users:0 })
+  const [stats, setStats] = useState({ campaigns:0, activeCampaigns:0, donations:0, totalRaised:0, mealsFunded:0, orders:0, orderRevenue:0, subscribers:0, users:0 })
   const [campaigns, setCampaigns] = useState<any[]>([])
   const [requests, setRequests] = useState<any[]>([])
   const [orders, setOrders] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
-  const [affiliates, setAffiliates] = useState<any[]>([])
   const [subscribers, setSubscribers] = useState<any[]>([])
   const [templates, setTemplates] = useState<any[]>([])
 
@@ -40,7 +39,7 @@ export default function AdminPage() {
   // Product modal
   const [productModal, setProductModal] = useState(false)
   const [editProduct, setEditProduct] = useState<any>(null)
-  const [pForm, setPForm] = useState({ name:'', category:'favours', price:'', description:'', visibility:'draft' })
+  const [pForm, setPForm] = useState({ name:'', category:'shop', price:'', description:'', visibility:'draft' })
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -54,12 +53,11 @@ export default function AdminPage() {
   }, [])
 
   const loadAll = async () => {
-    const [campaignsRes, requestsRes, ordersRes, usersRes, affiliatesRes, subscribersRes, donationsRes, templatesRes] = await Promise.all([
+    const [campaignsRes, requestsRes, ordersRes, usersRes, subscribersRes, donationsRes, templatesRes] = await Promise.all([
       supabase.from('campaigns').select('*').order('created_at', { ascending: false }),
       supabase.from('campaign_requests').select('*').order('submitted_at', { ascending: false }),
       supabase.from('orders').select('*').order('created_at', { ascending: false }),
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
-      supabase.from('affiliates').select('*').order('created_at', { ascending: false }),
       supabase.from('newsletter_subscribers').select('*').eq('is_active', true).order('subscribed_at', { ascending: false }),
       supabase.from('donations').select('amount,meals_funded,confirmed').eq('confirmed', true),
       supabase.from('campaign_templates').select('*').order('sort_order', { ascending: true }),
@@ -74,7 +72,6 @@ export default function AdminPage() {
     setRequests(requestsRes.data || [])
     setOrders(ords)
     setUsers(usersRes.data || [])
-    setAffiliates(affiliatesRes.data || [])
     setSubscribers(subs)
     setTemplates(templatesRes.data || [])
 
@@ -86,8 +83,6 @@ export default function AdminPage() {
       mealsFunded: donations.reduce((s,d) => s + (d.meals_funded||0), 0),
       orders: ords.length,
       orderRevenue: ords.reduce((s,o) => s + (o.total||0), 0),
-      affiliates: (affiliatesRes.data||[]).length,
-      connections: 0,
       subscribers: subs.length,
       users: (usersRes.data||[]).length,
     })
@@ -187,7 +182,6 @@ export default function AdminPage() {
     {id:'templates',label:'Design Templates',icon:'▦'},
     {id:'orders',label:'Orders',icon:'◐'},
     {id:'users',label:'Users',icon:'◑'},
-    {id:'affiliates',label:'Affiliates',icon:'◒'},
     {id:'newsletter',label:'Newsletter',icon:'◓'},
   ]
 
@@ -226,7 +220,6 @@ export default function AdminPage() {
                 {label:'Meals funded',value:stats.mealsFunded.toLocaleString(),color:'#E8A020'},
                 {label:'Orders',value:stats.orders,color:'#d4af6e'},
                 {label:'Order revenue',value:`$${stats.orderRevenue.toFixed(2)}`,color:'#1D9E75'},
-                {label:'Affiliates',value:stats.affiliates,color:'#9b8ec4'},
                 {label:'Newsletter',value:`${stats.subscribers} subs`,color:'#378ADD'},
                 {label:'Total users',value:stats.users,color:'rgba(255,255,255,0.6)'},
               ].map(({label,value,color}) => (
@@ -486,34 +479,6 @@ export default function AdminPage() {
                       <td style={c.td}><span style={c.badge(user.newsletter_opted_in?'#1D9E75':'rgba(255,255,255,0.25)')}>{user.newsletter_opted_in?'Yes':'No'}</span></td>
                       <td style={c.td}><span style={c.badge(user.onboarding_complete?'#1D9E75':'#d4a017')}>{user.onboarding_complete?'Yes':'Pending'}</span></td>
                       <td style={c.td}><span style={c.badge(user.role==='admin'?'#d4af6e':'rgba(255,255,255,0.25)')}>{user.role||'user'}</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* ── AFFILIATES ── */}
-        {panel === 'affiliates' && (
-          <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
-            {sectionTitle(`Affiliates (${affiliates.length})`)}
-            <div style={c.card}>
-              <table style={{width:'100%',borderCollapse:'collapse'}}>
-                <thead><tr>{['Name','Business','City','Status','Actions'].map(h => <th key={h} style={c.th}>{h}</th>)}</tr></thead>
-                <tbody>
-                  {affiliates.length === 0 && (
-                    <tr><td colSpan={5} style={{...c.td,textAlign:'center',color:'rgba(255,255,255,0.3)',fontStyle:'italic',padding:'32px'}}>No affiliates yet</td></tr>
-                  )}
-                  {affiliates.map(aff => (
-                    <tr key={aff.id}>
-                      <td style={c.td}>{aff.display_name}</td>
-                      <td style={{...c.td,fontSize:'12px',color:'rgba(255,255,255,0.5)'}}>{aff.business_name}</td>
-                      <td style={{...c.td,fontSize:'12px'}}>{aff.city}, {aff.state}</td>
-                      <td style={c.td}><span style={c.badge(aff.status==='approved'?'#1D9E75':'#d4a017')}>{aff.status}</span></td>
-                      <td style={c.td}>
-                        {aff.status !== 'approved' && <button style={c.btn('green')} onClick={async () => { await supabase.from('affiliates').update({status:'approved'}).eq('id',aff.id); setAffiliates(as => as.map(a => a.id===aff.id?{...a,status:'approved'}:a)) }}>Approve</button>}
-                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -4,7 +4,7 @@ import { z } from 'zod'
 
 const ProductSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  category: z.enum(['favours', 'clothing', 'accessories', 'decor', 'art']),
+  category: z.enum(['clothing', 'accessories', 'decor', 'art']),
   price: z.number().positive('Price must be positive'),
   description: z.string().optional(),
   images: z.array(z.string()).optional().default([]),
@@ -12,7 +12,6 @@ const ProductSchema = z.object({
   variants: z.array(z.string()).optional().default([]),
   stock_status: z.enum(['in_stock', 'low', 'out', 'seasonal']).default('in_stock'),
   visibility: z.enum(['published', 'draft', 'featured']).default('draft'),
-  is_favour_item: z.boolean().default(false),
   sort_order: z.number().optional().default(0),
 })
 
@@ -21,7 +20,6 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const category = searchParams.get('category')
   const visibility = searchParams.get('visibility') || 'published'
-  const favour_only = searchParams.get('favour_only') === 'true'
   const all = searchParams.get('all') === 'true' // admin: fetch all visibilities
 
   // Check if admin requesting all
@@ -29,7 +27,7 @@ export async function GET(request: NextRequest) {
   if (all) {
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
-      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
       isAdmin = profile?.role === 'admin'
     }
   }
@@ -38,7 +36,6 @@ export async function GET(request: NextRequest) {
 
   if (category) query = query.eq('category', category)
   if (!isAdmin) query = query.in('visibility', ['published', 'featured'])
-  if (favour_only) query = query.eq('is_favour_item', true)
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -50,7 +47,7 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
   if (profile?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await request.json()

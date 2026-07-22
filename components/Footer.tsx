@@ -19,7 +19,7 @@ export default function Footer() {
   return (
     <footer style={{ background:'#080f08', borderTop:'0.5px solid rgba(212,175,110,0.12)', padding:'56px 40px 32px' }}>
       <div style={{ maxWidth:'1200px', margin:'0 auto' }}>
-        <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr 1fr', gap:'48px', marginBottom:'40px' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr', gap:'48px', marginBottom:'40px' }}>
 
           {/* Brand */}
           <div>
@@ -41,23 +41,7 @@ export default function Footer() {
             <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
               {[
                 { href:'/sadaqah', label:'Baab As-Sadaqah' },
-                { href:'/favours', label:'Party Favours' },
-                { href:'/events', label:'Find a Decorator' },
                 { href:'/shop', label:'Islamic Shop' },
-              ].map(({ href, label }) => (
-                <Link key={href} href={href} style={linkStyle}>{label}</Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Affiliates */}
-          <div>
-            <div style={colTitle}>Affiliates</div>
-            <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
-              {[
-                { href:'/affiliates/apply', label:'Become an Affiliate' },
-                { href:'/affiliates/login', label:'Affiliate Login' },
-                { href:'/affiliates/guidelines', label:'Event Guidelines' },
               ].map(({ href, label }) => (
                 <Link key={href} href={href} style={linkStyle}>{label}</Link>
               ))}

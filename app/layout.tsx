@@ -36,8 +36,8 @@ export const metadata: Metadata = {
     default: 'Green Emblem — Islamic Events, Giving & Community',
     template: '%s | Green Emblem',
   },
-  description: 'Party favours, event decor, verified Islamic decorators and charitable giving — all under one roof.',
-  keywords: ['Islamic events', 'Muslim wedding favours', 'Nikkah', 'Walima', 'Aqiqah', 'halal', 'sadaqah'],
+  description: 'Free QR-code charitable giving for Islamic events — turn any Nikkah, Walima, or Aqiqah into sadaqah given in someone\'s honour.',
+  keywords: ['Islamic events', 'sadaqah', 'charity QR code', 'Nikkah', 'Walima', 'Aqiqah', 'halal', 'Muslim giving'],
   openGraph: {
     title: 'Green Emblem',
     description: 'Faith. Strength. Purpose.',

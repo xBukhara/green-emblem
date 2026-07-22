@@ -44,85 +44,72 @@ export default function HomePage() {
           </div>
 
           <div className="fade-up" style={{ animationDelay:'0.3s' }}>
+            <div style={{ fontFamily:'var(--font-arabic)', fontSize:'26px', color:'var(--gold)', opacity:0.75, marginBottom:'14px' }} lang="ar">
+              بَابُ الصَّدَقَة
+            </div>
             <h1 style={{ fontFamily:'var(--font-cinzel)', fontSize:'clamp(36px,7vw,72px)', fontWeight:500, lineHeight:1.08, color:'#fff', marginBottom:'20px', letterSpacing:'-0.01em' }}>
               Every celebration<br/>
               <span style={{ color:'var(--gold)' }}>honoured with</span><br/>
-              intention
+              sadaqah
             </h1>
           </div>
 
           <div className="fade-up" style={{ animationDelay:'0.5s', maxWidth:'520px' }}>
             <p style={{ fontFamily:'var(--font-cormorant)', fontSize:'clamp(16px,2.5vw,20px)', fontStyle:'italic', color:'rgba(255,255,255,0.55)', lineHeight:1.75, marginBottom:'40px' }}>
-              Party favours crafted with care. Verified Islamic decorators. Charitable giving at every event. All under one roof.
+              Scan a QR code at any Nikkah, Walima, or Aqiqah, and turn the celebration into charity given in someone's honour. Free to start. No fees. No middleman.
             </p>
             <div style={{ display:'flex', gap:'12px', justifyContent:'center', flexWrap:'wrap' }}>
-              <Link href="/favours" className="btn-gold" style={{ textDecoration:'none' }}>
-                Order party favours
+              <Link href="/sadaqah" className="btn-gold" style={{ textDecoration:'none' }}>
+                Start Baab As-Sadaqah
               </Link>
-              <Link href="/sadaqah" className="btn-outline" style={{ textDecoration:'none' }}>
-                Baab As-Sadaqah
+              <Link href="/shop" className="btn-outline" style={{ textDecoration:'none' }}>
+                Visit the shop
               </Link>
             </div>
           </div>
         </section>
 
-        {/* ── 4 PILLARS ── */}
+        {/* ── HOW IT WORKS (3 steps) ── */}
         <section className="reveal" style={{ padding:'80px 24px', maxWidth:'1100px', margin:'0 auto' }}>
           <div style={{ textAlign:'center', marginBottom:'52px' }}>
             <div style={{ fontFamily:'var(--font-cinzel)', fontSize:'9px', letterSpacing:'0.28em', color:'var(--gold)', marginBottom:'14px' }}>
-              What we do
+              How it works
             </div>
             <h2 style={{ fontFamily:'var(--font-cinzel)', fontSize:'clamp(24px,4vw,38px)', fontWeight:500, color:'#fff' }}>
-              Four ways we serve<br/>the community
+              From request to QR code<br/>in minutes
             </h2>
           </div>
 
           <div className="reveal reveal-stagger" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:'16px' }}>
             {[
               {
+                num: '01',
+                title: 'Tell us the occasion',
+                desc: 'Share the honourees\u2019 names, the event type, and the date. Takes under a minute.',
+                cta: 'Request a campaign',
+                href: '/sadaqah/request',
+              },
+              {
+                num: '02',
+                title: 'Design it yourself',
+                desc: 'Pick a colorway, font, and pattern in the design studio. See it rendered live as you go. Goes live the moment you publish \u2014 no approval wait.',
+                cta: 'See the design studio',
                 href: '/sadaqah',
-                arabic: 'بَابُ الصَّدَقَة',
-                title: 'Baab As-Sadaqah',
-                subtitle: 'The Gate of Charity',
-                desc: 'A QR code at your event lets every guest give sadaqah in the names of the honourees. 100% of donations go directly to charity.',
-                cta: 'Learn more',
-                accent: '#2e6b2e',
               },
               {
-                href: '/favours',
-                arabic: 'هَدَايَا',
-                title: 'Party Favours',
-                subtitle: 'Curated with intention',
-                desc: 'Pre-assembled Islamic favour bags for Nikkah, Walima, Aqiqah and every blessed occasion. From 50 units, delivered to your door.',
-                cta: 'Configure yours',
-                accent: '#d4af6e',
+                num: '03',
+                title: 'Print and share the code',
+                desc: 'Download a QR card styled to match your event. Place it on tables. Guests scan, choose a charity, and give \u2014 directly, with nothing held by Green Emblem.',
+                cta: 'How giving works',
+                href: '/sadaqah',
               },
-              {
-                href: '/events',
-                arabic: 'مُزَيِّنُون',
-                title: 'Find a Decorator',
-                subtitle: 'Verified Islamic decorators',
-                desc: 'Our network of vetted decorators specialises in Islamic events. Pay a one-time $19 finder fee and we make the introduction.',
-                cta: 'Browse decorators',
-                accent: '#5a9e5a',
-              },
-              {
-                href: '/shop',
-                arabic: 'مَتْجَر',
-                title: 'Islamic Shop',
-                subtitle: 'Clothing, art & more',
-                desc: 'Thobes, abayas, Islamic art, accessories and decor. Every piece selected with the Muslim home and community in mind.',
-                cta: 'Visit the shop',
-                accent: '#a07840',
-              },
-            ].map(({ href, arabic, title, subtitle, desc, cta, accent }) => (
-                <Link key={href} href={href} style={{ textDecoration:'none' }}>
-                  <div className="pillar-card hover-lift" style={{ background:'rgba(15,31,15,0.55)', border:'0.5px solid rgba(212,175,110,0.12)', borderRadius:'16px', padding:'28px 24px', height:'100%', transition:'border-color 0.2s, transform 0.2s', cursor:'pointer' }}>
-                  <div style={{ fontFamily:'var(--font-arabic)', fontSize:'20px', color:accent, marginBottom:'14px', opacity:0.7 }} lang="ar">{arabic}</div>
-                  <div style={{ fontFamily:'var(--font-cinzel)', fontSize:'14px', fontWeight:500, color:'#fff', marginBottom:'4px' }}>{title}</div>
-                  <div style={{ fontFamily:'var(--font-cormorant)', fontSize:'13px', color:'rgba(255,255,255,0.4)', fontStyle:'italic', marginBottom:'14px' }}>{subtitle}</div>
+            ].map(({ num, title, desc, cta, href }) => (
+              <Link key={num} href={href} style={{ textDecoration:'none' }}>
+                <div className="pillar-card hover-lift" style={{ background:'rgba(15,31,15,0.55)', border:'0.5px solid rgba(212,175,110,0.12)', borderRadius:'16px', padding:'28px 24px', height:'100%', transition:'border-color 0.2s, transform 0.2s', cursor:'pointer' }}>
+                  <div style={{ fontFamily:'var(--font-cinzel)', fontSize:'26px', color:'var(--gold)', opacity:0.5, marginBottom:'14px' }}>{num}</div>
+                  <div style={{ fontFamily:'var(--font-cinzel)', fontSize:'15px', fontWeight:500, color:'#fff', marginBottom:'12px' }}>{title}</div>
                   <p style={{ fontFamily:'var(--font-cormorant)', fontSize:'15px', color:'rgba(255,255,255,0.6)', lineHeight:1.7, marginBottom:'20px' }}>{desc}</p>
-                  <div style={{ fontFamily:'var(--font-cinzel)', fontSize:'9px', letterSpacing:'0.18em', color:accent }}>
+                  <div style={{ fontFamily:'var(--font-cinzel)', fontSize:'9px', letterSpacing:'0.18em', color:'var(--gold)' }}>
                     {cta} →
                   </div>
                 </div>
@@ -132,7 +119,7 @@ export default function HomePage() {
         </section>
 
         {/* ── SADAQAH HIGHLIGHT ── */}
-        <section className="reveal" style={{ padding:'60px 24px', background:'rgba(26,61,26,0.2)', borderTop:'0.5px solid rgba(212,175,110,0.08)', borderBottom:'0.5px solid rgba(212,175,110,0.08)' }}>
+        <section className="reveal" style={{ padding:'70px 24px', background:'rgba(26,61,26,0.2)', borderTop:'0.5px solid rgba(212,175,110,0.08)', borderBottom:'0.5px solid rgba(212,175,110,0.08)' }}>
           <div style={{ maxWidth:'800px', margin:'0 auto', textAlign:'center' }}>
             <GoldDivider />
             <div style={{ margin:'32px 0' }}>
@@ -140,10 +127,10 @@ export default function HomePage() {
                 بَابُ الصَّدَقَة
               </div>
               <h2 style={{ fontFamily:'var(--font-cinzel)', fontSize:'clamp(22px,4vw,36px)', fontWeight:500, color:'#fff', marginBottom:'14px' }}>
-                Turn every celebration<br/>into an act of giving
+                Free, because it should be
               </h2>
               <p style={{ fontFamily:'var(--font-cormorant)', fontSize:'18px', fontStyle:'italic', color:'rgba(255,255,255,0.55)', lineHeight:1.8, marginBottom:'32px', maxWidth:'560px', margin:'0 auto 32px' }}>
-                Place a QR code on each table at your Nikkah or Walima. Guests scan, choose an amount, and donate directly to Share The Meal — in the names of the bride and groom. No fees. No middleman.
+                Baab As-Sadaqah will always be free to use. Guests give directly to verified charities like Share The Meal, Islamic Relief USA, and UNICEF USA \u2014 Green Emblem never touches the money.
               </p>
               <Link href="/sadaqah" className="btn-gold" style={{ textDecoration:'none' }}>
                 Request a campaign
@@ -153,23 +140,20 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ── AFFILIATE CTA ── */}
+        {/* ── SHOP TEASER ── */}
         <section className="reveal" style={{ padding:'80px 24px', maxWidth:'700px', margin:'0 auto', textAlign:'center' }}>
           <div style={{ fontFamily:'var(--font-cinzel)', fontSize:'9px', letterSpacing:'0.28em', color:'var(--gold)', marginBottom:'14px' }}>
-            For decorators
+            The shop
           </div>
           <h2 style={{ fontFamily:'var(--font-cinzel)', fontSize:'clamp(22px,4vw,36px)', fontWeight:500, color:'#fff', marginBottom:'14px' }}>
-            Are you an Islamic<br/>event decorator?
+            Stand in the Middle
           </h2>
           <p style={{ fontFamily:'var(--font-cormorant)', fontSize:'18px', fontStyle:'italic', color:'rgba(255,255,255,0.5)', lineHeight:1.75, marginBottom:'32px' }}>
-            Join our verified network. We send you the clients — you keep 100% of your service fee. We earn only the $19 connection.
+            Clothing and accessories for the Muslim home \u2014 a reminder to take the balanced path, and refrain from division.
           </p>
           <div style={{ display:'flex', gap:'12px', justifyContent:'center', flexWrap:'wrap' }}>
-            <Link href="/affiliates/apply" className="btn-gold" style={{ textDecoration:'none' }}>
-              Apply to join
-            </Link>
-            <Link href="/events" className="btn-outline" style={{ textDecoration:'none' }}>
-              View our network
+            <Link href="/shop" className="btn-gold" style={{ textDecoration:'none' }}>
+              Visit the shop
             </Link>
           </div>
         </section>

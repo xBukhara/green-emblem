@@ -67,9 +67,6 @@ export default function Nav() {
 
         <ul className="nav-desktop-links" style={{ display:'flex', alignItems:'center', gap:'28px', listStyle:'none' }}>
           <li><Link href="/shop" style={linkStyle}>Shop</Link></li>
-          <li><Link href="/favours" style={linkStyle}>Party Favours</Link></li>
-          <li><Link href="/events" style={linkStyle}>Find a Decorator</Link></li>
-          <li><Link href="/sadaqah" style={linkStyle}>Baab As-Sadaqah</Link></li>
           {user ? (
             <>
               <li><Link href="/dashboard" style={linkStyle}>My Dashboard</Link></li>
@@ -81,22 +78,16 @@ export default function Nav() {
             </>
           ) : (
             <li>
-              <Link href="/auth/sign-in" style={{
-                fontFamily:'var(--font-cinzel)', fontSize:'10px', letterSpacing:'0.14em',
-                color:'var(--forest-dark)', background:'var(--gold)',
-                padding:'8px 18px', borderRadius:'6px', textDecoration:'none',
-              }}>
-                Sign in
-              </Link>
+              <Link href="/auth/sign-in" style={linkStyle}>Sign in</Link>
             </li>
           )}
           <li>
-            <Link href="/affiliates/apply" style={{
-              fontFamily:'var(--font-cinzel)', fontSize:'10px', letterSpacing:'0.12em',
-              color:'var(--gold)', border:'0.5px solid rgba(212,175,110,0.4)',
-              padding:'8px 16px', borderRadius:'6px', textDecoration:'none',
+            <Link href="/sadaqah" style={{
+              fontFamily:'var(--font-cinzel)', fontSize:'10px', letterSpacing:'0.14em',
+              color:'var(--forest-dark)', background:'var(--gold)',
+              padding:'8px 20px', borderRadius:'6px', textDecoration:'none',
             }}>
-              Become an Affiliate
+              Start Baab As-Sadaqah
             </Link>
           </li>
         </ul>
@@ -122,9 +113,6 @@ export default function Nav() {
         }}>
           {[
             { href:'/shop', label:'Shop' },
-            { href:'/favours', label:'Party Favours' },
-            { href:'/events', label:'Find a Decorator' },
-            { href:'/sadaqah', label:'Baab As-Sadaqah' },
           ].map(({ href, label }) => (
             <Link key={href} href={href} style={{ fontFamily:'var(--font-cinzel)', fontSize:'12px', letterSpacing:'0.16em', color:'rgba(255,255,255,0.6)', textDecoration:'none' }}>
               {label}
@@ -138,8 +126,8 @@ export default function Nav() {
           ) : (
             <Link href="/auth/sign-in" style={{ fontFamily:'var(--font-cinzel)', fontSize:'12px', letterSpacing:'0.16em', color:'var(--gold)', textDecoration:'none' }}>Sign in</Link>
           )}
-          <Link href="/affiliates/apply" style={{ fontFamily:'var(--font-cinzel)', fontSize:'12px', letterSpacing:'0.16em', color:'var(--gold)', border:'0.5px solid rgba(212,175,110,0.4)', padding:'10px 16px', borderRadius:'6px', textDecoration:'none', textAlign:'center' }}>
-            Become an Affiliate
+          <Link href="/sadaqah" style={{ fontFamily:'var(--font-cinzel)', fontSize:'12px', letterSpacing:'0.16em', color:'var(--forest-dark)', background:'var(--gold)', padding:'10px 16px', borderRadius:'6px', textDecoration:'none', textAlign:'center' }}>
+            Start Baab As-Sadaqah
           </Link>
         </div>
       )}

@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/server'
-import {
-  sendOrderConfirmation,
-  sendNewOrderToAdmin,
-  sendClientConnectionConfirmed,
-  sendAffiliateConnected,
-} from '@/lib/email'
+import { sendOrderConfirmation, sendNewOrderToAdmin } from '@/lib/email'
 import type Stripe from 'stripe'
 
 
@@ -30,8 +25,8 @@ export async function POST(request: NextRequest) {
     const session = event.data.object as Stripe.Checkout.Session
     const meta = session.metadata || {}
 
-    // ── FAVOUR / SHOP / SAMPLE ORDER ──────────────────────────────────────────
-    if (meta.order_id && ['favours', 'shop', 'sample'].includes(meta.order_type)) {
+    // ── SHOP ORDER ──────────────────────────────────────────────────────────
+    if (meta.order_id && meta.order_type === 'shop') {
       const shippingAddr = session.shipping_details?.address
 
       // Update order to processing
@@ -51,14 +46,8 @@ export async function POST(request: NextRequest) {
       }).eq('id', meta.order_id)
 
       // Fetch order for emails
-      const { data: order } = await admin.from('orders').select('*').eq('id', meta.order_id).single()
+      const { data: order } = await admin.from('orders').select('*').eq('id', meta.order_id).maybeSingle()
       if (order) {
-        const deliveryNote = order.order_type === 'favours'
-          ? '2–3 weeks (production + shipping)'
-          : order.order_type === 'sample'
-          ? '2–3 business days (USPS Priority)'
-          : '5–10 business days'
-
         await Promise.allSettled([
           sendOrderConfirmation({
             customerEmail:    session.customer_email || order.customer_email,
@@ -68,7 +57,7 @@ export async function POST(request: NextRequest) {
             items:            order.items,
             total:            order.total,
             shippingMethod:   order.shipping_method,
-            estimatedDelivery: deliveryNote,
+            estimatedDelivery: '5–10 business days',
           }),
           sendNewOrderToAdmin({
             orderNumber:   order.order_number,
@@ -76,72 +65,9 @@ export async function POST(request: NextRequest) {
             orderType:     order.order_type,
             total:         order.total,
             items:         order.items,
-            eventType:     order.event_type,
-            quantity:      order.bundle_quantity,
           }),
         ])
       }
-    }
-
-    // ── AFFILIATE $19 CONNECTION ───────────────────────────────────────────────
-    if (meta.connection_id && meta.order_type === 'affiliate_connection') {
-      // Update connection to 'connected'
-      await admin.from('affiliate_connections').update({
-        status:           'connected',
-        stripe_payment_id: session.payment_intent as string,
-        stripe_session_id: session.id,
-        connected_at:      new Date().toISOString(),
-      }).eq('id', meta.connection_id)
-
-      // Fetch connection + affiliate + their profile
-      const { data: conn } = await admin
-        .from('affiliate_connections')
-        .select(`
-          *,
-          affiliates (
-            display_name, city, state, user_id
-          )
-        `)
-        .eq('id', meta.connection_id)
-        .single()
-
-      if (conn?.affiliates) {
-        const { data: affiliateProfile } = await admin
-          .from('profiles')
-          .select('email, full_name')
-          .eq('id', conn.affiliates.user_id)
-          .single()
-
-        await Promise.allSettled([
-          // Notify affiliate of new client
-          affiliateProfile && sendAffiliateConnected({
-            affiliateEmail:     affiliateProfile.email,
-            affiliateFirstName: affiliateProfile.full_name?.split(' ')[0] || 'there',
-            clientName:         session.customer_details?.name || 'A client',
-            clientEmail:        conn.client_email,
-            eventType:          conn.event_type,
-            eventDate:          conn.event_date,
-            guestCount:         conn.guest_count,
-            notes:              conn.notes,
-          }),
-          // Confirm to client
-          sendClientConnectionConfirmed({
-            clientEmail:    conn.client_email,
-            clientName:     session.customer_details?.name || 'there',
-            affiliateName:  conn.affiliates.display_name,
-            affiliateCity:  `${conn.affiliates.city}, ${conn.affiliates.state}`,
-            eventType:      conn.event_type,
-          }),
-        ])
-      }
-    }
-  }
-
-  // Premium QR unlock
-  if (event.type === 'checkout.session.completed') {
-    const premSession = event.data.object as Stripe.Checkout.Session
-    if (premSession.metadata?.order_type === 'premium_qr' && premSession.metadata?.campaign_id) {
-      await admin.from('campaigns').update({ qr_tier: 'premium' }).eq('id', premSession.metadata.campaign_id)
     }
   }
 
