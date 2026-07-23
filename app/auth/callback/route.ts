@@ -56,13 +56,16 @@ export async function GET(request: NextRequest) {
     .from('profiles')
     .select('id, onboarding_complete')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
 
   if (!profile) {
-    // First-time sign-in — create the profile row so onboarding can .update() it later
+    // First-time sign-in — create the profile row so onboarding can save to it later.
+    // Works the same for Google and Apple; Apple only supplies a name on the
+    // user's very first-ever authorization, so full_name may be empty here —
+    // onboarding step 1 lets them fill it in either way.
     const name = user.user_metadata?.full_name || ''
     const parts = name.split(' ')
-    await admin.from('profiles').insert({
+    const newProfile = {
       id: user.id,
       email: user.email,
       full_name: name,
@@ -70,7 +73,24 @@ export async function GET(request: NextRequest) {
       last_name: user.user_metadata?.family_name || parts.slice(1).join(' ') || '',
       role: 'user',
       onboarding_complete: false,
-    })
+    }
+
+    let { error: insertError } = await admin.from('profiles').insert(newProfile)
+
+    // A unique-constraint conflict here almost always means a stale row from
+    // an earlier broken sign-in attempt is squatting on this email with a
+    // different id. Clean it up and retry once, rather than failing silently
+    // and leaving the user stuck in an onboarding/dashboard redirect loop.
+    if (insertError?.code === '23505' && user.email) {
+      await admin.from('profiles').delete().eq('email', user.email).neq('id', user.id)
+      ;({ error: insertError } = await admin.from('profiles').insert(newProfile))
+    }
+
+    if (insertError) {
+      console.error('Profile creation failed on sign-in:', insertError)
+      return NextResponse.redirect(`${baseUrl}/auth/sign-in?error=profile_creation_failed`)
+    }
+
     return NextResponse.redirect(`${baseUrl}/onboarding`)
   }
 

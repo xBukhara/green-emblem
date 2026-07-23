@@ -23,7 +23,10 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { first_name, last_name, phone, address, local_mosque, newsletter } = body
+  const {
+    first_name, last_name, phone, address, local_mosque, newsletter,
+    mosque_place_id, mosque_lat, mosque_lng, mosque_formatted_address,
+  } = body
 
   if (!first_name || !last_name) {
     return NextResponse.json({ error: 'Name is required' }, { status: 400 })
@@ -36,19 +39,30 @@ export async function POST(request: NextRequest) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-  const { error: updateError } = await admin.from('profiles').update({
+  // Upsert rather than update — if the profile row was never created (e.g.
+  // the sign-in callback's insert failed silently), an UPDATE would match
+  // zero rows and report false success, leaving the user stuck in an
+  // onboarding <-> dashboard redirect loop. Upsert guarantees the row exists.
+  const { error: upsertError } = await admin.from('profiles').upsert({
+    id: user.id,
+    email: user.email,
     first_name,
     last_name,
     full_name: `${first_name} ${last_name}`,
     phone: phone || null,
     address: address || null,
     local_mosque: local_mosque || null,
+    mosque_place_id: mosque_place_id || null,
+    mosque_lat: mosque_lat ?? null,
+    mosque_lng: mosque_lng ?? null,
+    mosque_formatted_address: mosque_formatted_address || null,
     newsletter_opted_in: !!newsletter,
     onboarding_complete: true,
-  }).eq('id', user.id)
+  }, { onConflict: 'id' })
 
-  if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 500 })
+  if (upsertError) {
+    console.error('Onboarding upsert failed:', upsertError)
+    return NextResponse.json({ error: upsertError.message }, { status: 500 })
   }
 
   // Handle newsletter subscription

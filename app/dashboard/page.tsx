@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import ProfileTab from '@/components/ProfileTab'
 import { createClient } from '@/lib/supabase/client'
 import { Suspense } from 'react'
 
@@ -373,40 +374,7 @@ function DashboardInner() {
 
           {/* ── PROFILE TAB ── */}
           {tab === 'profile' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ background: 'rgba(15,31,15,0.55)', border: '0.5px solid rgba(212,175,110,0.12)', borderRadius: '14px', padding: '22px' }}>
-                <div style={{ fontFamily: 'Georgia, serif', fontSize: '9px', letterSpacing: '0.2em', color: '#d4af6e', marginBottom: '16px' }}>ACCOUNT DETAILS</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '18px' }}>
-                  {user?.user_metadata?.avatar_url && <img src={user.user_metadata.avatar_url} alt="" style={{ width: '56px', height: '56px', borderRadius: '50%', border: '2px solid rgba(212,175,110,0.3)' }}/>}
-                  <div>
-                    <div style={{ fontFamily: 'Georgia, serif', fontSize: '17px', color: '#fff', marginBottom: '3px' }}>{profile?.first_name} {profile?.last_name}</div>
-                    <div style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: 'rgba(255,255,255,0.45)', fontStyle: 'italic' }}>{user?.email}</div>
-                    {profile?.local_mosque && <div style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: 'rgba(255,255,255,0.3)', marginTop: '3px' }}>{profile.local_mosque}</div>}
-                  </div>
-                </div>
-                {profile?.address?.line1 && (
-                  <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '12px 14px', marginBottom: '12px' }}>
-                    <div style={{ fontFamily: 'Georgia, serif', fontSize: '9px', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.3)', marginBottom: '5px' }}>SHIPPING ADDRESS</div>
-                    <div style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
-                      {profile.address.line1}<br/>{profile.address.city}, {profile.address.state} {profile.address.zip}
-                    </div>
-                  </div>
-                )}
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  {profile?.newsletter_opted_in && <span style={{ fontFamily: 'Georgia, serif', fontSize: '9px', padding: '3px 10px', borderRadius: '20px', background: 'rgba(46,107,46,0.12)', color: '#1D9E75', border: '0.5px solid rgba(46,107,46,0.3)' }}>Newsletter ✓</span>}
-                  {profile?.role === 'admin' && <span style={{ fontFamily: 'Georgia, serif', fontSize: '9px', padding: '3px 10px', borderRadius: '20px', background: 'rgba(212,175,110,0.1)', color: '#d4af6e', border: '0.5px solid rgba(212,175,110,0.3)' }}>Admin</span>}
-                </div>
-              </div>
-
-              <div style={{ background: 'rgba(15,31,15,0.55)', border: '0.5px solid rgba(212,175,110,0.12)', borderRadius: '14px', padding: '22px' }}>
-                <div style={{ fontFamily: 'Georgia, serif', fontSize: '9px', letterSpacing: '0.2em', color: '#d4af6e', marginBottom: '14px' }}>QUICK LINKS</div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {[{ href: '/sadaqah/request', label: 'Request a campaign' }, { href: '/shop', label: 'Islamic shop' }].map(({ href, label }) => (
-                    <a key={href} href={href} style={{ fontFamily: 'Georgia, serif', fontSize: '10px', letterSpacing: '0.1em', color: '#d4af6e', border: '0.5px solid rgba(212,175,110,0.25)', padding: '8px 14px', borderRadius: '8px', textDecoration: 'none' }}>{label}</a>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <ProfileTab user={user} profile={profile} campaigns={campaigns} supabase={supabase} onProfileUpdate={p => setProfile(p)} />
           )}
 
         </div>

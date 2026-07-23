@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { MosqueAutocomplete, type MosquePlace } from '@/components/MosqueMap'
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -11,6 +12,7 @@ export default function OnboardingPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [step, setStep] = useState(1)
+  const [mosquePlace, setMosquePlace] = useState<MosquePlace | null>(null)
 
   const [form, setForm] = useState({
     first_name: '',
@@ -85,6 +87,10 @@ export default function OnboardingPage() {
             zip: form.address_zip,
           },
           local_mosque: form.local_mosque || null,
+          mosque_place_id: mosquePlace?.placeId || null,
+          mosque_lat: mosquePlace?.lat ?? null,
+          mosque_lng: mosquePlace?.lng ?? null,
+          mosque_formatted_address: mosquePlace?.formattedAddress || null,
           newsletter: form.newsletter,
         }),
       })
@@ -250,7 +256,14 @@ export default function OnboardingPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
                   <label style={lbl}>Your local mosque (optional)</label>
-                  <input type="text" value={form.local_mosque} onChange={e => set('local_mosque', e.target.value)} placeholder="e.g. Masjid Al-Noor, Queens NY" style={inp}/>
+                  <MosqueAutocomplete
+                    defaultValue={form.local_mosque}
+                    inputStyle={inp}
+                    onSelect={(place) => {
+                      set('local_mosque', place.name)
+                      setMosquePlace(place)
+                    }}
+                  />
                 </div>
 
                 {/* Community pitch */}

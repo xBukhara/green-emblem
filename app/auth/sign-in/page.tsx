@@ -24,7 +24,7 @@ function SignInInner() {
         .from('profiles')
         .select('onboarding_complete')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
       if (profile?.onboarding_complete) {
         router.replace('/dashboard')
       } else {
@@ -41,6 +41,19 @@ function SignInInner() {
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
         queryParams: { access_type: 'offline', prompt: 'consent' },
+        skipBrowserRedirect: false,
+      },
+    })
+    if (error) { setError(error.message); setLoading(false) }
+  }
+
+  const signInWithApple = async () => {
+    setLoading(true)
+    setError('')
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
         skipBrowserRedirect: false,
       },
     })
@@ -65,9 +78,13 @@ function SignInInner() {
         {error && (
           <div style={{ background:'rgba(226,75,74,0.1)', border:'0.5px solid rgba(226,75,74,0.3)', borderRadius:'8px', padding:'10px 14px', marginBottom:'16px', fontSize:'13px', color:'#e24b4a' }}>{error}</div>
         )}
-        <button onClick={signInWithGoogle} disabled={loading} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:'12px', background:'#fff', color:'#1a1a1a', border:'none', borderRadius:'10px', padding:'14px 20px', fontFamily:'var(--font-cormorant)', fontSize:'17px', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}>
+        <button onClick={signInWithGoogle} disabled={loading} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:'12px', background:'#fff', color:'#1a1a1a', border:'none', borderRadius:'10px', padding:'14px 20px', fontFamily:'var(--font-cormorant)', fontSize:'17px', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1, marginBottom:'12px' }}>
           <svg width="20" height="20" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
           {loading ? 'Redirecting…' : 'Continue with Google'}
+        </button>
+        <button onClick={signInWithApple} disabled={loading} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:'12px', background:'#000', color:'#fff', border:'none', borderRadius:'10px', padding:'14px 20px', fontFamily:'var(--font-cormorant)', fontSize:'17px', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}>
+          <svg width="17" height="20" viewBox="0 0 17 20" fill="#fff"><path d="M13.86 10.6c-.02-2.14 1.75-3.17 1.83-3.22-1-1.46-2.55-1.66-3.1-1.68-1.32-.13-2.58.78-3.25.78-.67 0-1.7-.76-2.8-.74-1.44.02-2.77.84-3.51 2.13-1.5 2.6-.38 6.44 1.07 8.55.71 1.03 1.56 2.19 2.67 2.15 1.07-.04 1.48-.69 2.78-.69 1.29 0 1.67.69 2.8.67 1.16-.02 1.9-1.05 2.6-2.09.82-1.2 1.16-2.36 1.18-2.42-.03-.01-2.24-.86-2.27-3.44z" fill="#fff"/><path d="M11.7 3.98c.59-.71.98-1.7.87-2.68-.84.03-1.86.56-2.47 1.26-.55.63-1.03 1.63-.9 2.6.94.07 1.9-.48 2.5-1.18z" fill="#fff"/></svg>
+          {loading ? 'Redirecting…' : 'Continue with Apple'}
         </button>
         <p style={{ fontFamily:'var(--font-cormorant)', fontSize:'12px', color:'rgba(255,255,255,0.3)', marginTop:'16px', lineHeight:1.6, fontStyle:'italic' }}>
           By signing in you agree to our Terms of Service and Privacy Policy.
