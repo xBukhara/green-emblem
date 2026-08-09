@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import ProfileTab from '@/components/ProfileTab'
+import GreenTVFeed from '@/components/GreenTVFeed'
 import { createClient } from '@/lib/supabase/client'
 import { Suspense } from 'react'
 
@@ -85,7 +86,7 @@ function DashboardInner() {
   const [requests, setRequests] = useState<any[]>([])
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<'impact'|'campaigns'|'orders'|'profile'>('impact')
+  const [tab, setTab] = useState<'impact'|'campaigns'|'greentv'|'orders'|'profile'>('impact')
   const [editingCampaign, setEditingCampaign] = useState<any>(null)
   const [saving, setSaving] = useState(false)
   const [welcome, setWelcome] = useState(false)
@@ -231,7 +232,7 @@ function DashboardInner() {
 
           {/* Tabs */}
           <div style={{ display: 'flex', gap: '3px', marginBottom: '18px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', padding: '3px', width: 'fit-content' }}>
-            {([['impact', 'Giving'], ['campaigns', 'Campaigns'], ['orders', 'Orders'], ['profile', 'Profile']] as [typeof tab, string][]).map(([id, label]) => (
+            {([['impact', 'Giving'], ['campaigns', 'Campaigns'], ['greentv', 'GreenTV'], ['orders', 'Orders'], ['profile', 'Profile']] as [typeof tab, string][]).map(([id, label]) => (
               <button key={id} onClick={() => setTab(id)} style={{ fontFamily: 'Georgia, serif', fontSize: '11px', letterSpacing: '0.1em', padding: '7px 14px', borderRadius: '7px', border: 'none', cursor: 'pointer', background: tab === id ? 'rgba(212,175,110,0.1)' : 'transparent', color: tab === id ? '#d4af6e' : 'rgba(255,255,255,0.4)', transition: 'all 0.15s' }}>
                 {label}
               </button>
@@ -339,6 +340,19 @@ function DashboardInner() {
           )}
 
           {/* ── ORDERS TAB ── */}
+          {tab === 'greentv' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div>
+                  <div style={{ fontFamily: 'Georgia, serif', fontSize: '9px', letterSpacing: '0.2em', color: '#5a9e5a' }}>GREENTV</div>
+                  <div style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>Islamic world news, curated</div>
+                </div>
+                <a href="/greentv" style={{ fontFamily: 'Georgia, serif', fontSize: '10px', color: '#5a9e5a', textDecoration: 'none', border: '0.5px solid rgba(90,158,90,0.4)', borderRadius: '8px', padding: '7px 14px' }}>Full channel →</a>
+              </div>
+              <GreenTVFeed/>
+            </div>
+          )}
+
           {tab === 'orders' && (
             orders.length === 0 ? (
               <div style={{ background: 'rgba(15,31,15,0.4)', border: '0.5px solid rgba(212,175,110,0.1)', borderRadius: '14px', padding: '48px', textAlign: 'center' }}>

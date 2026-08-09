@@ -223,7 +223,7 @@ export default function ProfileTab({ user, profile, campaigns, supabase, onProfi
       <div style={card}>
         <div style={sectionLabel}>QUICK LINKS</div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {[{ href: '/sadaqah/request', label: 'Request a campaign' }, { href: '/shop', label: 'Islamic shop' }].map(({ href, label }) => (
+          {[{ href: '/sadaqah/request', label: 'Request a campaign' }, { href: '/prayer', label: 'Prayer times & Qibla' }, { href: '/shop', label: 'Islamic shop' }].map(({ href, label }) => (
             <a key={href} href={href} style={{ fontFamily: 'Georgia, serif', fontSize: '10px', letterSpacing: '0.1em', color: '#d4af6e', border: '0.5px solid rgba(212,175,110,0.25)', padding: '8px 14px', borderRadius: '8px', textDecoration: 'none' }}>{label}</a>
           ))}
         </div>
