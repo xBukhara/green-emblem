@@ -3,8 +3,9 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { FONT_PAIRS, PATTERNS, OVERLAYS } from '@/lib/campaign-design'
+import { MosqueAutocomplete, type MosquePlace } from '@/components/MosqueMap'
 
-const PANELS = ['overview','campaigns','requests','templates','orders','users','newsletter'] as const
+const PANELS = ['overview','campaigns','requests','templates','masjids','orders','users','newsletter'] as const
 type Panel = typeof PANELS[number]
 
 export default function AdminPage() {
@@ -22,6 +23,15 @@ export default function AdminPage() {
   const [users, setUsers] = useState<any[]>([])
   const [subscribers, setSubscribers] = useState<any[]>([])
   const [templates, setTemplates] = useState<any[]>([])
+  const [masjids, setMasjids] = useState<any[]>([])
+  const [masjidEvents, setMasjidEvents] = useState<any[]>([])
+  const [masjidModal, setMasjidModal] = useState(false)
+  const [masjidPlace, setMasjidPlace] = useState<MosquePlace | null>(null)
+  const [masjidForm, setMasjidForm] = useState({ name:'', instagram_handle:'', facebook_page:'', phone:'', website:'', verified:true, auto_sync_enabled:false })
+  const [masjidSaving, setMasjidSaving] = useState(false)
+  const [eventModal, setEventModal] = useState<string | null>(null) // masjid_id
+  const [eventForm, setEventForm] = useState({ title:'', description:'', event_start:'', event_end:'' })
+  const [eventSaving, setEventSaving] = useState(false)
 
   // Template editor
   const [tplModal, setTplModal] = useState(false)
@@ -53,7 +63,7 @@ export default function AdminPage() {
   }, [])
 
   const loadAll = async () => {
-    const [campaignsRes, requestsRes, ordersRes, usersRes, subscribersRes, donationsRes, templatesRes] = await Promise.all([
+    const [campaignsRes, requestsRes, ordersRes, usersRes, subscribersRes, donationsRes, templatesRes, masjidsRes, masjidEventsRes] = await Promise.all([
       supabase.from('campaigns').select('*').order('created_at', { ascending: false }),
       supabase.from('campaign_requests').select('*').order('submitted_at', { ascending: false }),
       supabase.from('orders').select('*').order('created_at', { ascending: false }),
@@ -61,6 +71,8 @@ export default function AdminPage() {
       supabase.from('newsletter_subscribers').select('*').eq('is_active', true).order('subscribed_at', { ascending: false }),
       supabase.from('donations').select('amount,meals_funded,confirmed').eq('confirmed', true),
       supabase.from('campaign_templates').select('*').order('sort_order', { ascending: true }),
+      supabase.from('masjids').select('*').eq('active', true).order('name', { ascending: true }),
+      supabase.from('masjid_events').select('*').order('event_start', { ascending: false }),
     ])
 
     const camps = campaignsRes.data || []
@@ -74,6 +86,8 @@ export default function AdminPage() {
     setUsers(usersRes.data || [])
     setSubscribers(subs)
     setTemplates(templatesRes.data || [])
+    setMasjids(masjidsRes.data || [])
+    setMasjidEvents(masjidEventsRes.data || [])
 
     setStats({
       campaigns: camps.length,
@@ -103,6 +117,76 @@ export default function AdminPage() {
     })
     await supabase.from('campaign_requests').update({ status: 'approved' }).eq('id', requestId)
     setRequests(rs => rs.map(r => r.id === requestId ? { ...r, status: 'approved' } : r))
+  }
+
+  const saveMasjid = async () => {
+    if (!masjidForm.name) return
+    setMasjidSaving(true)
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch('/api/masjids', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+      body: JSON.stringify({
+        ...masjidForm,
+        address: masjidPlace?.formattedAddress,
+        lat: masjidPlace?.lat, lng: masjidPlace?.lng, place_id: masjidPlace?.placeId,
+        city: masjidPlace?.formattedAddress?.split(',')[1]?.trim(),
+        state: masjidPlace?.formattedAddress?.split(',')[2]?.trim()?.split(' ')[0],
+      }),
+    })
+    const data = await res.json()
+    if (data.masjid) setMasjids(ms => [...ms, data.masjid].sort((a,b) => a.name.localeCompare(b.name)))
+    setMasjidSaving(false)
+    setMasjidModal(false)
+    setMasjidForm({ name:'', instagram_handle:'', facebook_page:'', phone:'', website:'', verified:true, auto_sync_enabled:false })
+    setMasjidPlace(null)
+  }
+
+  const deleteMasjid = async (id: string) => {
+    if (!confirm('Remove this masjid from the directory?')) return
+    const { data: { session } } = await supabase.auth.getSession()
+    await fetch(`/api/masjids/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${session?.access_token}` } })
+    setMasjids(ms => ms.filter(m => m.id !== id))
+  }
+
+  const saveEvent = async (masjidId: string) => {
+    if (!eventForm.title || !eventForm.event_start || !eventForm.event_end) return
+    setEventSaving(true)
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch('/api/masjid-events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ masjid_id: masjidId, ...eventForm }),
+    })
+    const data = await res.json()
+    if (data.event) setMasjidEvents(es => [data.event, ...es])
+    setEventSaving(false)
+    setEventModal(null)
+    setEventForm({ title:'', description:'', event_start:'', event_end:'' })
+  }
+
+  const cancelEvent = async (id: string) => {
+    const { data: { session } } = await supabase.auth.getSession()
+    await fetch(`/api/masjid-events/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${session?.access_token}` } })
+    setMasjidEvents(es => es.map(e => e.id === id ? { ...e, status: 'cancelled' } : e))
+  }
+
+  const approveEvent = async (id: string) => {
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch(`/api/masjid-events/${id}/approve`, { method: 'POST', headers: { 'Authorization': `Bearer ${session?.access_token}` } })
+    if (res.ok) setMasjidEvents(es => es.map(e => e.id === id ? { ...e, status: 'active' } : e))
+  }
+
+  const [syncingMasjid, setSyncingMasjid] = useState<string | null>(null)
+  const syncMasjidNow = async (id: string) => {
+    setSyncingMasjid(id)
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch(`/api/admin/sync-masjid/${id}`, { method: 'POST', headers: { 'Authorization': `Bearer ${session?.access_token}` } })
+    const data = await res.json()
+    await loadAll() // refresh masjid sync status + any new pending events
+    setSyncingMasjid(null)
+    if (data.error) alert(`Sync issue: ${data.error}`)
+    else alert(`Sync complete — found ${data.totalExtracted} event(s), ${data.newEvents} new.`)
   }
 
   const sendNewsletter = async () => {
@@ -180,6 +264,7 @@ export default function AdminPage() {
     {id:'campaigns',label:'Campaigns',icon:'◉'},
     {id:'requests',label:'Sadaqah Requests',icon:'◎'},
     {id:'templates',label:'Design Templates',icon:'▦'},
+    {id:'masjids',label:'Masjids & Events',icon:'\u25b3'},
     {id:'orders',label:'Orders',icon:'◐'},
     {id:'users',label:'Users',icon:'◑'},
     {id:'newsletter',label:'Newsletter',icon:'◓'},
@@ -424,6 +509,135 @@ export default function AdminPage() {
                     <div style={{display:'flex',gap:'10px',marginTop:'6px'}}>
                       <button style={{...c.btn(),flex:1,padding:'11px',background:'rgba(255,255,255,0.06)',color:'rgba(255,255,255,0.5)'}} onClick={() => setTplModal(false)}>Cancel</button>
                       <button style={{...c.btn('gold'),flex:2,padding:'11px',opacity:tplSaving?0.6:1}} onClick={saveTemplate} disabled={tplSaving}>{tplSaving ? 'Saving…' : tplEdit ? 'Save changes' : 'Create template'}</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── MASJIDS & EVENTS ── */}
+        {panel === 'masjids' && (
+          <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
+            {sectionTitle(`Masjids & Events (${masjids.length})`)}
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <p style={{fontFamily:'Georgia,serif',fontSize:'12px',color:'rgba(255,255,255,0.4)',fontStyle:'italic'}}>
+                Verified Sunni masjids and Islamic institutes. Add events here — followers are notified automatically, and events auto-expire 24h after they end.
+              </p>
+              <button style={c.btn('gold')} onClick={() => setMasjidModal(true)}>+ Add masjid</button>
+            </div>
+
+            {masjids.length === 0 && (
+              <div style={{...c.card,textAlign:'center',padding:'40px',color:'rgba(255,255,255,0.3)',fontFamily:'Georgia,serif',fontStyle:'italic'}}>
+                No masjids in the directory yet. Add your first one to start posting events.
+              </div>
+            )}
+
+            {masjids.map(m => {
+              const events = masjidEvents.filter(e => e.masjid_id === m.id)
+              return (
+                <div key={m.id} style={c.card}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'10px'}}>
+                    <div>
+                      <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                        <span style={{fontFamily:'Georgia,serif',fontSize:'15px',color:'#fff'}}>{m.name}</span>
+                        {m.verified && <span style={c.badge('#1D9E75')}>verified</span>}
+                        {m.auto_sync_enabled && <span style={c.badge('#9b8ec4')}>auto-sync {m.auto_sync_trusted ? '· trusted' : '· review'}</span>}
+                      </div>
+                      <div style={{fontFamily:'Georgia,serif',fontSize:'11px',color:'rgba(255,255,255,0.4)'}}>{m.address}</div>
+                      {m.auto_sync_enabled && (
+                        <div style={{fontFamily:'Georgia,serif',fontSize:'10px',color:'rgba(255,255,255,0.3)',marginTop:'4px'}}>
+                          {m.last_synced_at
+                            ? <>Last synced {new Date(m.last_synced_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})} — {m.last_sync_status === 'error' ? <span style={{color:'#e24b4a'}}>error: {m.last_sync_error}</span> : m.last_sync_status === 'no_events_found' ? 'no events found' : `${m.last_sync_event_count ?? 0} new event(s)`}</>
+                            : 'Not synced yet'}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{display:'flex',gap:'6px',flexWrap:'wrap',justifyContent:'flex-end'}}>
+                      {m.auto_sync_enabled && <button style={c.btn()} onClick={() => syncMasjidNow(m.id)} disabled={syncingMasjid === m.id}>{syncingMasjid === m.id ? 'Syncing…' : 'Sync now'}</button>}
+                      <button style={c.btn('gold')} onClick={() => setEventModal(m.id)}>+ Event</button>
+                      <button style={c.btn('red')} onClick={() => deleteMasjid(m.id)}>Remove</button>
+                    </div>
+                  </div>
+
+                  {events.length > 0 && (
+                    <div style={{display:'flex',flexDirection:'column',gap:'6px',marginTop:'10px',borderTop:'0.5px solid rgba(255,255,255,0.06)',paddingTop:'10px'}}>
+                      {events.map(e => (
+                        <div key={e.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:'12px'}}>
+                          <span style={{fontFamily:'Georgia,serif',color: e.status==='active' ? '#fff' : 'rgba(255,255,255,0.3)'}}>
+                            {e.title} <span style={{color:'rgba(255,255,255,0.35)'}}>· {new Date(e.event_start).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>
+                          </span>
+                          <span style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                            <span style={c.badge(e.status==='active'?'#1D9E75':e.status==='cancelled'?'#e24b4a':e.status==='pending'?'#d4a017':'#666')}>{e.status}</span>
+                            {e.status === 'pending' && <button onClick={() => approveEvent(e.id)} style={{fontFamily:'Georgia,serif',fontSize:'10px',color:'#1D9E75',background:'none',border:'none',cursor:'pointer'}}>Approve</button>}
+                            {e.status === 'active' && <button onClick={() => cancelEvent(e.id)} style={{fontFamily:'Georgia,serif',fontSize:'10px',color:'rgba(255,255,255,0.3)',background:'none',border:'none',cursor:'pointer'}}>Cancel</button>}
+                            {e.status === 'pending' && <button onClick={() => cancelEvent(e.id)} style={{fontFamily:'Georgia,serif',fontSize:'10px',color:'#e24b4a',background:'none',border:'none',cursor:'pointer'}}>Reject</button>}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add-event modal, scoped to this masjid */}
+                  {eventModal === m.id && (
+                    <div style={{marginTop:'14px',borderTop:'0.5px solid rgba(212,175,110,0.15)',paddingTop:'14px',display:'flex',flexDirection:'column',gap:'10px'}}>
+                      <input type="text" placeholder="Event title" value={eventForm.title} onChange={e => setEventForm({...eventForm,title:e.target.value})} style={c.inp}/>
+                      <textarea placeholder="Description (optional)" value={eventForm.description} onChange={e => setEventForm({...eventForm,description:e.target.value})} style={{...c.inp,minHeight:'60px',resize:'vertical'}}/>
+                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
+                        <div>
+                          <label style={{fontFamily:'Georgia,serif',fontSize:'9px',color:'rgba(255,255,255,0.35)',display:'block',marginBottom:'4px'}}>STARTS</label>
+                          <input type="datetime-local" value={eventForm.event_start} onChange={e => setEventForm({...eventForm,event_start:e.target.value})} style={{...c.inp,colorScheme:'dark'}}/>
+                        </div>
+                        <div>
+                          <label style={{fontFamily:'Georgia,serif',fontSize:'9px',color:'rgba(255,255,255,0.35)',display:'block',marginBottom:'4px'}}>ENDS</label>
+                          <input type="datetime-local" value={eventForm.event_end} onChange={e => setEventForm({...eventForm,event_end:e.target.value})} style={{...c.inp,colorScheme:'dark'}}/>
+                        </div>
+                      </div>
+                      <div style={{display:'flex',gap:'8px'}}>
+                        <button style={{...c.btn(),flex:1}} onClick={() => setEventModal(null)}>Cancel</button>
+                        <button style={{...c.btn('gold'),flex:2,opacity:eventSaving?0.6:1}} onClick={() => saveEvent(m.id)} disabled={eventSaving}>{eventSaving ? 'Posting…' : 'Post event & notify followers'}</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+            {/* Add-masjid modal */}
+            {masjidModal && (
+              <div style={{position:'fixed',inset:0,zIndex:200,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center',padding:'24px'}} onClick={() => setMasjidModal(false)}>
+                <div style={{...c.card,width:'100%',maxWidth:'480px',padding:'24px'}} onClick={e => e.stopPropagation()}>
+                  <div style={{fontFamily:'Georgia,serif',fontSize:'11px',letterSpacing:'0.18em',color:'#d4af6e',marginBottom:'18px'}}>ADD MASJID</div>
+                  <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                    <div>
+                      <label style={{fontFamily:'Georgia,serif',fontSize:'9px',color:'rgba(255,255,255,0.35)',display:'block',marginBottom:'5px'}}>NAME</label>
+                      <input type="text" value={masjidForm.name} onChange={e => setMasjidForm({...masjidForm,name:e.target.value})} placeholder="Masjid Al-Noor" style={c.inp}/>
+                    </div>
+                    <div>
+                      <label style={{fontFamily:'Georgia,serif',fontSize:'9px',color:'rgba(255,255,255,0.35)',display:'block',marginBottom:'5px'}}>ADDRESS (search Google Maps)</label>
+                      <MosqueAutocomplete onSelect={setMasjidPlace} inputStyle={c.inp}/>
+                      {masjidPlace && <div style={{fontFamily:'Georgia,serif',fontSize:'11px',color:'#1D9E75',marginTop:'6px'}}>✓ {masjidPlace.formattedAddress}</div>}
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
+                      <input type="text" placeholder="Instagram handle" value={masjidForm.instagram_handle} onChange={e => setMasjidForm({...masjidForm,instagram_handle:e.target.value})} style={c.inp}/>
+                      <input type="text" placeholder="Phone" value={masjidForm.phone} onChange={e => setMasjidForm({...masjidForm,phone:e.target.value})} style={c.inp}/>
+                    </div>
+                    <div>
+                      <label style={{fontFamily:'Georgia,serif',fontSize:'9px',color:'rgba(255,255,255,0.35)',display:'block',marginBottom:'5px'}}>WEBSITE (their events/announcements page, if they have one)</label>
+                      <input type="text" placeholder="https://masjidname.org/events" value={masjidForm.website} onChange={e => setMasjidForm({...masjidForm,website:e.target.value})} style={c.inp}/>
+                    </div>
+                    <label style={{display:'flex',alignItems:'center',gap:'8px',cursor:'pointer',fontFamily:'Georgia,serif',fontSize:'12px',color:'rgba(255,255,255,0.6)'}}>
+                      <input type="checkbox" checked={masjidForm.auto_sync_enabled} onChange={e => setMasjidForm({...masjidForm,auto_sync_enabled:e.target.checked})} disabled={!masjidForm.website}/>
+                      Auto-sync events from their website (AI-extracted, held for your review before publishing)
+                    </label>
+                    <label style={{display:'flex',alignItems:'center',gap:'8px',cursor:'pointer',fontFamily:'Georgia,serif',fontSize:'12px',color:'rgba(255,255,255,0.6)'}}>
+                      <input type="checkbox" checked={masjidForm.verified} onChange={e => setMasjidForm({...masjidForm,verified:e.target.checked})}/>
+                      Verified (confirmed real, active institution)
+                    </label>
+                    <div style={{display:'flex',gap:'10px',marginTop:'6px'}}>
+                      <button style={{...c.btn(),flex:1}} onClick={() => setMasjidModal(false)}>Cancel</button>
+                      <button style={{...c.btn('gold'),flex:2,opacity:masjidSaving?0.6:1}} onClick={saveMasjid} disabled={masjidSaving || !masjidForm.name}>{masjidSaving ? 'Saving…' : 'Add to directory'}</button>
                     </div>
                   </div>
                 </div>

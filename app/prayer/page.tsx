@@ -190,68 +190,184 @@ export default function PrayerPage() {
 }
 
 // ── Qibla compass ────────────────────────────────────────────────────────
+// Built the way native compass apps (and MuslimPro) actually work: the dial
+// itself rotates as you turn the device — N/E/S/W sweep around — while a
+// fixed arrow at the top of the screen always represents "where the phone
+// is pointing." A Kaaba marker sits at a fixed spot on the (rotating) dial,
+// at the Qibla bearing. When the Kaaba marker swings under the fixed top
+// arrow, you're facing Mecca.
 function QiblaFinder({ bearing }: { bearing: number }) {
   const [liveHeading, setLiveHeading] = useState<number | null>(null)
   const [liveError, setLiveError] = useState('')
+  const [calibrating, setCalibrating] = useState(false)
+
+  // Smoothing + continuous-rotation state (refs so the event handler always
+  // sees the latest value without re-subscribing on every render)
+  const smoothedRef = useRef<number>(NaN)           // low-pass filtered heading, 0-360
+  const unwrappedRef = useRef(0)                     // continuously increasing/decreasing — no 359->1 snap
+  const calibTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleOrientation = useCallback((e: any) => {
+    let raw = e.webkitCompassHeading ?? (e.alpha != null ? 360 - e.alpha : null)
+    if (raw == null) return
+
+    // Compensate for screen rotation (landscape etc.) so the dial stays correct
+    const screenAngle = (screen as any).orientation?.angle ?? (window as any).orientation ?? 0
+    raw = (raw + screenAngle + 360) % 360
+
+    if (Number.isNaN(smoothedRef.current)) {
+      smoothedRef.current = raw
+    } else {
+      let delta = raw - smoothedRef.current
+      if (delta > 180) delta -= 360
+      if (delta < -180) delta += 360
+      smoothedRef.current = (smoothedRef.current + delta * 0.15 + 360) % 360
+    }
+    const smoothed = smoothedRef.current
+
+    // Unwrap so CSS rotation always takes the short path, never spins
+    // the long way around when crossing the 0/360 boundary
+    const prevWrapped = ((unwrappedRef.current % 360) + 360) % 360
+    let d = smoothed - prevWrapped
+    if (d > 180) d -= 360
+    if (d < -180) d += 360
+    unwrappedRef.current += d
+
+    setLiveHeading(unwrappedRef.current)
+  }, [])
 
   const enableLiveCompass = async () => {
     setLiveError('')
     const DOE: any = (window as any).DeviceOrientationEvent
-    if (!DOE) { setLiveError('Live compass is not supported on this device.'); return }
+    if (!DOE) { setLiveError('Live compass is not supported on this device — showing the fixed bearing instead.'); return }
 
     if (typeof DOE.requestPermission === 'function') {
       try {
         const res = await DOE.requestPermission()
-        if (res !== 'granted') { setLiveError('Compass permission was denied.'); return }
+        if (res !== 'granted') { setLiveError('Compass permission was denied. You can still use the bearing number below.'); return }
       } catch {
         setLiveError('Could not request compass permission.'); return
       }
     }
 
-    window.addEventListener('deviceorientationabsolute', handleOrientation as any, true)
-    window.addEventListener('deviceorientation', handleOrientation as any, true)
+    window.addEventListener('deviceorientationabsolute', handleOrientation, true)
+    window.addEventListener('deviceorientation', handleOrientation, true)
+    window.addEventListener('compassneedscalibration', onNeedsCalibration as any, true)
   }
 
-  const handleOrientation = (e: any) => {
-    const heading = e.webkitCompassHeading ?? (e.absolute && e.alpha != null ? 360 - e.alpha : null)
-    if (heading != null) setLiveHeading(heading)
+  const onNeedsCalibration = () => {
+    setCalibrating(true)
+    if (calibTimer.current) clearTimeout(calibTimer.current)
+    calibTimer.current = setTimeout(() => setCalibrating(false), 4000)
   }
 
   useEffect(() => {
     return () => {
-      window.removeEventListener('deviceorientationabsolute', handleOrientation as any, true)
-      window.removeEventListener('deviceorientation', handleOrientation as any, true)
+      window.removeEventListener('deviceorientationabsolute', handleOrientation, true)
+      window.removeEventListener('deviceorientation', handleOrientation, true)
+      window.removeEventListener('compassneedscalibration', onNeedsCalibration as any, true)
+      if (calibTimer.current) clearTimeout(calibTimer.current)
     }
-  }, [])
+  }, [handleOrientation])
 
-  // Needle rotation: bearing to Mecca, offset by the phone's own heading if live mode is on
-  const needleRotation = liveHeading != null ? bearing - liveHeading : bearing
+  const isLive = liveHeading != null
+  const dialRotation = isLive ? -liveHeading : 0
+  const headingDisplay = isLive ? Math.round(((liveHeading % 360) + 360) % 360) : null
+
+  // How far off is the Kaaba marker from the fixed top pointer right now?
+  const offFromQibla = isLive ? Math.abs(((bearing - (((liveHeading % 360) + 360) % 360) + 540) % 360) - 180) : null
+  const aligned = offFromQibla != null && offFromQibla < 6
+
+  const R = 100 // dial radius
+  const C = 130 // svg center
 
   return (
     <div style={{ background: 'rgba(15,31,15,0.55)', border: '0.5px solid rgba(212,175,110,0.12)', borderRadius: '14px', padding: '28px 24px', textAlign: 'center' }}>
-      <div style={{ fontFamily: 'Georgia, serif', fontSize: '9px', letterSpacing: '0.2em', color: 'var(--gold)', marginBottom: '18px' }}>QIBLA DIRECTION</div>
+      <div style={{ fontFamily: 'Georgia, serif', fontSize: '9px', letterSpacing: '0.2em', color: 'var(--gold)', marginBottom: '4px' }}>QIBLA DIRECTION</div>
+      {calibrating && (
+        <div style={{ fontFamily: 'var(--font-inter)', fontSize: '10px', color: '#e8b923', marginBottom: '10px' }}>
+          Move your phone in a figure-8 to calibrate the compass
+        </div>
+      )}
 
-      <div style={{ position: 'relative', width: '180px', height: '180px', margin: '0 auto 18px' }}>
-        <svg width="180" height="180" viewBox="0 0 180 180">
-          <circle cx="90" cy="90" r="85" fill="none" stroke="rgba(212,175,110,0.25)" strokeWidth="1"/>
-          {[0, 90, 180, 270].map(deg => (
-            <line key={deg} x1="90" y1="10" x2="90" y2="18" stroke="rgba(212,175,110,0.4)" strokeWidth="2" transform={`rotate(${deg} 90 90)`}/>
-          ))}
-          <text x="90" y="24" textAnchor="middle" fontSize="11" fill="rgba(255,255,255,0.4)" fontFamily="var(--font-inter)">N</text>
-          {/* Needle, rotating toward Mecca */}
-          <g transform={`rotate(${needleRotation} 90 90)`} style={{ transition: 'transform 0.2s ease-out' }}>
-            <polygon points="90,20 84,95 90,85 96,95" fill="var(--gold)"/>
-            <circle cx="90" cy="90" r="5" fill="var(--gold)"/>
+      <div style={{ position: 'relative', width: '260px', height: '260px', margin: '0 auto 18px' }}>
+        <svg width="260" height="260" viewBox="0 0 260 260">
+          <defs>
+            <radialGradient id="dialBg" cx="50%" cy="50%" r="65%">
+              <stop offset="0%" stopColor="rgba(212,175,110,0.06)"/>
+              <stop offset="100%" stopColor="rgba(212,175,110,0)"/>
+            </radialGradient>
+            <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+
+          <circle cx={C} cy={C} r={R + 18} fill="url(#dialBg)"/>
+
+          {/* ── Rotating dial: outer ring, ticks, N/E/S/W labels, Kaaba marker ── */}
+          <g style={{ transform: `rotate(${dialRotation}deg)`, transformOrigin: `${C}px ${C}px`, transition: isLive ? 'transform 0.15s linear' : 'none' }}>
+            <circle cx={C} cy={C} r={R} fill="none" stroke="rgba(212,175,110,0.3)" strokeWidth="1"/>
+            <circle cx={C} cy={C} r={R - 14} fill="none" stroke="rgba(212,175,110,0.12)" strokeWidth="1"/>
+
+            {/* degree ticks every 15°, longer every 30° */}
+            {Array.from({ length: 24 }, (_, i) => i * 15).map(deg => (
+              <line key={deg} x1={C} y1={C - R} x2={C} y2={C - R + (deg % 30 === 0 ? 10 : 5)} stroke="rgba(212,175,110,0.35)" strokeWidth={deg % 90 === 0 ? 2 : 1} transform={`rotate(${deg} ${C} ${C})`}/>
+            ))}
+
+            {/* cardinal + intercardinal labels — position computed directly so the
+                counter-rotation (keeping text upright as the dial spins) doesn't
+                conflict with the positioning transform */}
+            {[
+              { deg: 0, t: 'N', big: true }, { deg: 45, t: 'NE' }, { deg: 90, t: 'E', big: true },
+              { deg: 135, t: 'SE' }, { deg: 180, t: 'S', big: true }, { deg: 225, t: 'SW' },
+              { deg: 270, t: 'W', big: true }, { deg: 315, t: 'NW' },
+            ].map(({ deg, t, big }) => {
+              const rad = (deg - 90) * (Math.PI / 180)
+              const labelR = R - 28
+              const lx = C + labelR * Math.cos(rad)
+              const ly = C + labelR * Math.sin(rad)
+              return (
+                <text
+                  key={t} x={lx} y={ly} textAnchor="middle" dominantBaseline="central"
+                  fontSize={big ? 15 : 10} fontWeight={big ? 700 : 400}
+                  fill={t === 'N' ? '#e0574f' : big ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.35)'}
+                  fontFamily="var(--font-inter)"
+                  style={{ transform: `rotate(${-dialRotation}deg)`, transformOrigin: `${lx}px ${ly}px` }}
+                >
+                  {t}
+                </text>
+              )
+            })}
+
+            {/* Kaaba marker — fixed on the dial at the Qibla bearing */}
+            <g transform={`rotate(${bearing} ${C} ${C})`}>
+              <g filter={aligned ? 'url(#glow)' : undefined}>
+                <circle cx={C} cy={C - R + 2} r="13" fill={aligned ? '#2ecc71' : 'var(--gold)'} style={{ transition: 'fill 0.25s' }}/>
+                {/* simple Kaaba silhouette */}
+                <rect x={C - 6} y={C - R - 4} width="12" height="10" fill="#14210f"/>
+                <rect x={C - 6} y={C - R - 4} width="12" height="3" fill="#c9a227"/>
+              </g>
+            </g>
           </g>
+
+          {/* ── Fixed top pointer — represents where the phone is facing, does NOT rotate ── */}
+          <g>
+            <polygon points={`${C},${C - R - 22} ${C - 7},${C - R - 4} ${C + 7},${C - R - 4}`} fill={aligned ? '#2ecc71' : '#fff'} style={{ transition: 'fill 0.25s' }}/>
+          </g>
+
+          {/* center hub */}
+          <circle cx={C} cy={C} r="4" fill="rgba(255,255,255,0.6)"/>
         </svg>
       </div>
 
-      <div style={{ fontFamily: 'Georgia, serif', fontSize: '15px', color: '#fff', marginBottom: '4px' }}>{bearing.toFixed(1)}° from North</div>
+      <div style={{ fontFamily: 'Georgia, serif', fontSize: '15px', color: aligned ? '#2ecc71' : '#fff', marginBottom: '4px', transition: 'color 0.25s' }}>
+        {aligned ? 'Facing Qibla ✓' : `${bearing.toFixed(1)}° from North`}
+      </div>
       <p style={{ fontFamily: 'var(--font-cormorant)', fontSize: '13px', fontStyle: 'italic', color: 'rgba(255,255,255,0.4)', marginBottom: '16px' }}>
-        {liveHeading != null ? 'The gold needle points toward the Kaaba as you turn.' : 'Align this bearing with a compass, or enable live mode below.'}
+        {isLive
+          ? `Facing ${headingDisplay}° — turn until the marker lines up with the top arrow.`
+          : 'Align this bearing with a compass, or enable live mode below.'}
       </p>
 
-      {liveHeading == null && (
+      {!isLive && (
         <button onClick={enableLiveCompass} style={{ fontFamily: 'var(--font-inter)', fontSize: '11px', fontWeight: 600, color: 'var(--gold)', background: 'none', border: '0.5px solid rgba(212,175,110,0.4)', borderRadius: '9px', padding: '9px 18px', cursor: 'pointer' }}>
           Enable live compass
         </button>

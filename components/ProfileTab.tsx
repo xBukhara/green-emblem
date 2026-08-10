@@ -161,11 +161,14 @@ export default function ProfileTab({ user, profile, campaigns, supabase, onProfi
       <div style={card}>
         <div style={sectionLabel}>COMMUNITY ANNOUNCEMENTS</div>
         <div style={{ textAlign: 'center', padding: '20px 10px' }}>
-          <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: 'rgba(255,255,255,0.35)', fontStyle: 'italic', lineHeight: 1.7 }}>
-            {mosquePlace?.placeId
-              ? `We don't have a live feed connected for ${mosquePlace.name} yet — this is on our roadmap.`
-              : 'Add your masjid above and we\u2019ll show announcements here once your masjid is connected.'}
+          <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: 'rgba(255,255,255,0.35)', fontStyle: 'italic', lineHeight: 1.7, marginBottom: '14px' }}>
+            {profile?.followed_masjid_id
+              ? "You're following a masjid on GreenWorld+ — new events they post will show up there and in your email."
+              : 'Follow your masjid on GreenWorld+ to see their events and get notified when they post something new.'}
           </p>
+          <Link href="/greenworld-plus" style={{ fontFamily: 'Georgia, serif', fontSize: '10px', letterSpacing: '0.1em', color: '#9b8ec4', border: '0.5px solid rgba(155,142,196,0.4)', padding: '8px 16px', borderRadius: '8px', textDecoration: 'none', display: 'inline-block' }}>
+            {profile?.followed_masjid_id ? 'View local events' : 'Follow your masjid'}
+          </Link>
         </div>
       </div>
 
@@ -196,7 +199,7 @@ export default function ProfileTab({ user, profile, campaigns, supabase, onProfi
           {[
             { field: 'sub_greentv' as const, href: '/greentv', name: 'GreenTV', desc: 'Islamic world news, curated', accent: '#5a9e5a' },
             { field: 'sub_greenfitness' as const, href: '/greenfitness', name: 'GreenFitness', desc: 'Faith-centered fitness coaching', accent: '#d4af6e' },
-            { field: 'sub_greenworld_plus' as const, href: '/greenworld-plus', name: 'GreenWorld+', desc: 'More from Green Emblem, coming soon', accent: '#9b8ec4' },
+            { field: 'sub_greenworld_plus' as const, href: '/greenworld-plus', name: 'GreenWorld+', desc: 'Local masjid events, all in one place', accent: '#9b8ec4' },
           ].map(({ field, href, name, desc, accent }) => (
             <div key={field} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: `0.5px solid ${profile?.[field] ? accent + '50' : 'transparent'}`, borderRadius: '10px', padding: '12px 14px' }}>
               <Link href={href} style={{ textDecoration: 'none' }}>
@@ -223,7 +226,7 @@ export default function ProfileTab({ user, profile, campaigns, supabase, onProfi
       <div style={card}>
         <div style={sectionLabel}>QUICK LINKS</div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {[{ href: '/sadaqah/request', label: 'Request a campaign' }, { href: '/prayer', label: 'Prayer times & Qibla' }, { href: '/shop', label: 'Islamic shop' }].map(({ href, label }) => (
+          {[{ href: '/sadaqah/request', label: 'Request a campaign' }, { href: '/shop', label: 'Islamic shop' }].map(({ href, label }) => (
             <a key={href} href={href} style={{ fontFamily: 'Georgia, serif', fontSize: '10px', letterSpacing: '0.1em', color: '#d4af6e', border: '0.5px solid rgba(212,175,110,0.25)', padding: '8px 14px', borderRadius: '8px', textDecoration: 'none' }}>{label}</a>
           ))}
         </div>

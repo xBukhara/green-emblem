@@ -334,3 +334,46 @@ export async function sendCampaignEnded(data: {
     `),
   })
 }
+
+// ─── NEW MASJID EVENT → FOLLOWERS ─────────────────────────────────────────
+export async function sendNewEventNotification(data: {
+  email: string
+  firstName?: string
+  masjidName: string
+  eventTitle: string
+  eventDescription?: string
+  eventStart: string   // ISO string
+  eventEnd: string      // ISO string
+}) {
+  const start = new Date(data.eventStart)
+  const dateStr = start.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+  const timeStr = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+
+  return resend.emails.send({
+    from: FROM,
+    to: data.email,
+    subject: `New event at ${data.masjidName}: ${data.eventTitle}`,
+    html: emailWrapper(`
+      ${emailHeader('New community event')}
+      <div style="padding:32px">
+        <p style="font-size:15px;color:#333">Assalamu Alaikum${data.firstName ? ` ${data.firstName}` : ''},</p>
+        <p style="font-size:15px;line-height:1.7;color:#333">
+          <strong>${data.masjidName}</strong>, a masjid you follow on Green Emblem, just posted a new event:
+        </p>
+        <div style="background:#f5f0e6;border-radius:10px;padding:18px 20px;margin:20px 0">
+          <div style="font-size:17px;color:#0f1f0f;font-weight:bold;margin-bottom:6px">${data.eventTitle}</div>
+          <div style="font-size:13px;color:#2e6b2e;margin-bottom:10px">${dateStr} · ${timeStr}</div>
+          ${data.eventDescription ? `<p style="font-size:14px;color:#555;line-height:1.6;margin:0">${data.eventDescription}</p>` : ''}
+        </div>
+        <div style="text-align:center;margin:24px 0">
+          <a href="${APP_URL}/greenworld-plus" style="background:#d4af6e;color:#0f1f0f;padding:12px 24px;border-radius:8px;text-decoration:none;font-size:14px;display:inline-block;font-weight:bold">
+            See all local events →
+          </a>
+        </div>
+        <p style="font-size:12px;color:#999;text-align:center">
+          You're getting this because you follow ${data.masjidName} on GreenWorld+. You can unfollow anytime from your account page.
+        </p>
+      </div>
+    `),
+  })
+}
