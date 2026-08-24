@@ -197,8 +197,7 @@ export default function ProfileTab({ user, profile, campaigns, supabase, onProfi
         <div style={sectionLabel}>EXPLORE GREEN EMBLEM</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {[
-            { field: 'sub_greentv' as const, href: '/greentv', name: 'GreenTV', desc: 'Islamic world news, curated', accent: '#5a9e5a' },
-            { field: 'sub_greenfitness' as const, href: '/greenfitness', name: 'GreenFitness', desc: 'Faith-centered fitness coaching', accent: '#d4af6e' },
+            { field: 'sub_greentv' as const, href: '/greentv', name: 'GreenTV', desc: 'News, fitness coaching & live community', accent: '#5a9e5a' },
             { field: 'sub_greenworld_plus' as const, href: '/greenworld-plus', name: 'GreenWorld+', desc: 'Local masjid events, all in one place', accent: '#9b8ec4' },
           ].map(({ field, href, name, desc, accent }) => (
             <div key={field} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: `0.5px solid ${profile?.[field] ? accent + '50' : 'transparent'}`, borderRadius: '10px', padding: '12px 14px' }}>

@@ -345,7 +345,7 @@ function DashboardInner() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <div>
                   <div style={{ fontFamily: 'Georgia, serif', fontSize: '9px', letterSpacing: '0.2em', color: '#5a9e5a' }}>GREENTV</div>
-                  <div style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>Islamic world news, curated</div>
+                  <div style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>News, fitness &amp; community</div>
                 </div>
                 <a href="/greentv" style={{ fontFamily: 'Georgia, serif', fontSize: '10px', color: '#5a9e5a', textDecoration: 'none', border: '0.5px solid rgba(90,158,90,0.4)', borderRadius: '8px', padding: '7px 14px' }}>Full channel →</a>
               </div>

@@ -35,7 +35,7 @@ export default function AboutPage() {
             Every Nikkah, Walima, Aqiqah, and Eid gathering is already a moment of gratitude. Baab As-Sadaqah — &ldquo;the door of charity&rdquo; — turns that moment into something that outlasts it: a QR code on the table that lets guests give directly to a verified charity, in honour of the people being celebrated. No fees. No middleman. Green Emblem never touches the money — it only builds the door.
           </p>
           <p style={p}>
-            That single idea is why the platform exists, and it&rsquo;s free by design. Everything else we build — GreenWorld+, GreenTV, GreenFitness, prayer tools — grows outward from the same instinct: make the good, ordinary infrastructure of Muslim life easier to reach.
+            That single idea is why the platform exists, and it&rsquo;s free by design. Everything else we build — GreenWorld+, GreenTV, Quran and prayer tools — grows outward from the same instinct: make the good, ordinary infrastructure of Muslim life easier to reach.
           </p>
         </div>
 
@@ -58,9 +58,8 @@ export default function AboutPage() {
             {[
               { name: 'Baab As-Sadaqah', desc: 'Free, QR-code charitable giving for any Islamic event.', href: '/sadaqah' },
               { name: 'GreenWorld+', desc: 'A directory of verified masjids and their local events.', href: '/greenworld-plus' },
-              { name: 'GreenTV', desc: 'Curated Islamic world news, forwarded from credible sources.', href: '/greentv' },
-              { name: 'Prayer & Qibla', desc: 'Accurate prayer times and a live Qibla compass, anywhere.', href: '/prayer' },
-              { name: 'GreenFitness', desc: 'Faith-centered fitness coaching. Launching soon.', href: '/greenfitness' },
+              { name: 'GreenTV', desc: 'News, fitness coaching, and a live community Discord.', href: '/greentv' },
+              { name: 'Prayer, Qibla & Quran', desc: 'Prayer times, a live Qibla compass, and Quran with tafsir.', href: '/prayer' },
               { name: 'The Shop', desc: 'Stand in the Middle — clothing built around balance.', href: '/shop' },
             ].map(({ name, desc, href }) => (
               <Link key={name} href={href} style={{ textDecoration: 'none' }}>

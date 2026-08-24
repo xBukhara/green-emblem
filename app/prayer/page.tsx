@@ -4,6 +4,7 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import { createClient } from '@/lib/supabase/client'
 import { CALC_METHODS, computeDayTimes, qiblaBearing, fmtTime, orderedPrayers, type CalcMethodId, type DayPrayerTimes } from '@/lib/prayer'
+import QuranReader from '@/components/QuranReader'
 
 const LOCATION_CACHE_KEY = 'ge_prayer_location'
 
@@ -21,6 +22,7 @@ export default function PrayerPage() {
   const [times, setTimes] = useState<DayPrayerTimes | null>(null)
   const [bearing, setBearing] = useState<number | null>(null)
   const [now, setNow] = useState(new Date())
+  const [subTab, setSubTab] = useState<'prayer' | 'quran'>('prayer')
 
   // ── Load saved preference (signed-in users) + cached location ──────────
   useEffect(() => {
@@ -94,19 +96,39 @@ export default function PrayerPage() {
     <>
       <div className="bg-tile" aria-hidden="true"/>
       <Nav />
-      <main style={{ position: 'relative', zIndex: 2, minHeight: '100dvh', padding: '120px 24px 80px', maxWidth: '640px', margin: '0 auto' }}>
+      <main style={{ position: 'relative', zIndex: 2, minHeight: '100dvh', padding: '120px 24px 80px', maxWidth: subTab === 'quran' ? '920px' : '640px', margin: '0 auto', transition: 'max-width 0.2s' }}>
 
-        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <div style={{ fontFamily: 'var(--font-arabic)', fontSize: '26px', color: 'var(--gold)', opacity: 0.75, marginBottom: '14px' }} lang="ar">الصَّلَاة</div>
           <div style={{ fontFamily: 'var(--font-cinzel)', fontSize: '10px', letterSpacing: '0.3em', color: 'var(--gold)', marginBottom: '16px' }}>PRAYER</div>
-          <h1 style={{ fontFamily: 'var(--font-cinzel)', fontSize: 'clamp(28px,5vw,44px)', fontWeight: 500, color: '#fff', marginBottom: '10px' }}>Prayer times & Qibla</h1>
-          {coords && (
+          <h1 style={{ fontFamily: 'var(--font-cinzel)', fontSize: 'clamp(28px,5vw,44px)', fontWeight: 500, color: '#fff', marginBottom: '10px' }}>Prayer, Qibla &amp; Quran</h1>
+          {subTab === 'prayer' && coords && (
             <p style={{ fontFamily: 'var(--font-cormorant)', fontSize: '14px', fontStyle: 'italic', color: 'rgba(255,255,255,0.4)' }}>
               Based on your current location · {coords.lat.toFixed(3)}, {coords.lng.toFixed(3)}
             </p>
           )}
         </div>
 
+        {/* ── Sub-tab selector ── */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '32px' }}>
+          <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(212,175,110,0.15)', borderRadius: '100px', padding: '4px' }}>
+            {(['prayer', 'quran'] as const).map(t => (
+              <button key={t} onClick={() => setSubTab(t)} style={{
+                fontFamily: 'var(--font-inter)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.04em',
+                padding: '9px 22px', borderRadius: '100px', border: 'none', cursor: 'pointer',
+                background: subTab === t ? 'var(--gold)' : 'transparent',
+                color: subTab === t ? '#0f1f0f' : 'rgba(255,255,255,0.5)', transition: 'all 0.2s',
+              }}>
+                {t === 'prayer' ? 'Prayer & Qibla' : 'Quran'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {subTab === 'quran' ? (
+          <QuranReader/>
+        ) : (
+        <>
         {/* ── Location gate ── */}
         {locStatus !== 'granted' && (
           <div style={{ textAlign: 'center', padding: '32px 24px', background: 'rgba(15,31,15,0.5)', borderRadius: '14px', marginBottom: '28px' }}>
@@ -182,6 +204,8 @@ export default function PrayerPage() {
             {/* ── Qibla ── */}
             {bearing !== null && <QiblaFinder bearing={bearing} />}
           </>
+        )}
+        </>
         )}
       </main>
       <Footer />

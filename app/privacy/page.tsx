@@ -41,7 +41,7 @@ export default function PrivacyPage() {
                 <tr><td style={td}>Sign-in data</td><td style={td}>Google or Apple account name/email/photo, provided when you sign in with those services</td><td style={td}>Authenticate your account</td></tr>
                 <tr><td style={td}>Location</td><td style={td}>Device geolocation (Prayer/Qibla tab); masjid searches (Google Places)</td><td style={td}>Calculate accurate prayer times and Qibla direction; find nearby masjids</td></tr>
                 <tr><td style={td}>Campaign &amp; giving data</td><td style={td}>Honouree names, event details, campaign design choices</td><td style={td}>Build and host your Baab As-Sadaqah campaign page</td></tr>
-                <tr><td style={td}>Community preferences</td><td style={td}>Followed masjid, GreenTV/GreenFitness/GreenWorld+ subscriptions</td><td style={td}>Show relevant content, send update notifications</td></tr>
+                <tr><td style={td}>Community preferences</td><td style={td}>Followed masjid, GreenTV/GreenWorld+ subscriptions</td><td style={td}>Show relevant content, send update notifications</td></tr>
                 <tr><td style={td}>Order &amp; payment data</td><td style={td}>Shipping address, order contents. Card details are handled entirely by Stripe — we never see or store your full card number.</td><td style={td}>Fulfill shop orders</td></tr>
                 <tr><td style={td}>Communications</td><td style={td}>Messages you send us, newsletter opt-in status</td><td style={td}>Respond to you, send updates you asked for</td></tr>
                 <tr><td style={td}>Usage data</td><td style={td}>Pages visited, device/browser type, general diagnostics</td><td style={td}>Keep the Services working and improve them</td></tr>
