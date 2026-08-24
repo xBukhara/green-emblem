@@ -377,3 +377,50 @@ export async function sendNewEventNotification(data: {
     `),
   })
 }
+
+// ─── CONTACT FORM → ADMIN ──────────────────────────────────────────────────
+export async function sendContactFormToAdmin(data: {
+  name: string
+  email: string
+  topic: string
+  message: string
+}) {
+  return resend.emails.send({
+    from: FROM,
+    to: ADMIN_EMAIL,
+    reply_to: data.email,
+    subject: `[Contact] ${data.topic} — ${data.name}`,
+    html: emailWrapper(`
+      ${emailHeader('New contact form message')}
+      <div style="padding:32px">
+        <p style="font-size:13px;color:#999;margin-bottom:4px">From</p>
+        <p style="font-size:15px;color:#333;margin-bottom:16px"><strong>${data.name}</strong> — ${data.email}</p>
+        <p style="font-size:13px;color:#999;margin-bottom:4px">Topic</p>
+        <p style="font-size:15px;color:#333;margin-bottom:16px">${data.topic}</p>
+        <p style="font-size:13px;color:#999;margin-bottom:4px">Message</p>
+        <p style="font-size:15px;color:#333;line-height:1.7;white-space:pre-wrap">${data.message}</p>
+      </div>
+    `),
+  })
+}
+
+// ─── CONTACT FORM → SUBMITTER (confirmation) ───────────────────────────────
+export async function sendContactConfirmation(data: { name: string; email: string }) {
+  return resend.emails.send({
+    from: FROM,
+    to: data.email,
+    subject: 'We received your message — Green Emblem',
+    html: emailWrapper(`
+      ${emailHeader('Message received')}
+      <div style="padding:32px">
+        <p style="font-size:15px;color:#333">Assalamu Alaikum ${data.name},</p>
+        <p style="font-size:15px;line-height:1.7;color:#333">
+          Thank you for reaching out to Green Emblem. We've received your message and will get back to you as soon as we can.
+        </p>
+        <p style="font-size:13px;color:#999;margin-top:24px">
+          This is an automated confirmation — no need to reply to this email.
+        </p>
+      </div>
+    `),
+  })
+}
