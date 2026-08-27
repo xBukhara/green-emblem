@@ -41,6 +41,9 @@ export default function Footer() {
             <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
               {[
                 { href:'/sadaqah', label:'Baab As-Sadaqah' },
+                { href:'/prayer', label:'Prayer & Qibla' },
+                { href:'/prayer?tab=quran', label:'Quran' },
+                { href:'/greenworld-plus', label:'GreenWorld+' },
                 { href:'/shop', label:'Islamic Shop' },
               ].map(({ href, label }) => (
                 <Link key={href} href={href} style={linkStyle}>{label}</Link>

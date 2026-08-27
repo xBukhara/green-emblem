@@ -146,7 +146,7 @@ export default function ProfileTab({ user, profile, campaigns, supabase, onProfi
           <>
             <div style={{ fontFamily: 'Georgia, serif', fontSize: '15px', color: '#fff', marginBottom: '3px' }}>{mosquePlace.name}</div>
             <div style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', marginBottom: '14px' }}>{mosquePlace.formattedAddress}</div>
-            <MosqueMapEmbed placeId={mosquePlace.placeId} name={mosquePlace.name} height={200}/>
+            <MosqueMapEmbed placeId={mosquePlace.placeId} name={mosquePlace.name} lat={mosquePlace.lat} lng={mosquePlace.lng} height={200}/>
             <button onClick={() => setMosquePlace(null)} style={{ marginTop: '12px', fontFamily: 'Georgia, serif', fontSize: '10px', color: 'rgba(255,255,255,0.35)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Change masjid</button>
           </>
         ) : (

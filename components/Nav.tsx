@@ -67,6 +67,8 @@ export default function Nav() {
 
         <ul className="nav-desktop-links" style={{ display:'flex', alignItems:'center', gap:'28px', listStyle:'none' }}>
           <li><Link href="/prayer" style={linkStyle}>Prayer</Link></li>
+          <li><Link href="/prayer?tab=quran" style={linkStyle}>Quran</Link></li>
+          <li><Link href="/greenworld-plus" style={linkStyle}>GreenWorld+</Link></li>
           <li><Link href="/shop" style={linkStyle}>Shop</Link></li>
           {user ? (
             <>
@@ -114,6 +116,8 @@ export default function Nav() {
         }}>
           {[
             { href:'/prayer', label:'Prayer' },
+            { href:'/prayer?tab=quran', label:'Quran' },
+            { href:'/greenworld-plus', label:'GreenWorld+' },
             { href:'/shop', label:'Shop' },
           ].map(({ href, label }) => (
             <Link key={href} href={href} style={{ fontFamily:'var(--font-cinzel)', fontSize:'12px', letterSpacing:'0.16em', color:'rgba(255,255,255,0.6)', textDecoration:'none' }}>

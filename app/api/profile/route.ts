@@ -25,7 +25,8 @@ export async function PATCH(request: NextRequest) {
     'first_name', 'last_name', 'phone', 'address',
     'local_mosque', 'mosque_place_id', 'mosque_lat', 'mosque_lng', 'mosque_formatted_address',
     'newsletter_opted_in', 'sub_greentv', 'sub_greenfitness', 'sub_greenworld_plus',
-    'followed_masjid_id',
+    'followed_masjid_id', 'travel_radius_miles',
+    'prayer_calc_method', 'prayer_madhab',
   ]
   const updates: Record<string, any> = {}
   for (const key of allowed) {

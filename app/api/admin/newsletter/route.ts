@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy init — a module-scope `new Resend(undefined)` throws at build time
+// (Next.js imports routes while collecting page data) and breaks deploys.
+let _resend: Resend | null = null
+function getResend(): Resend {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY)
+  return _resend
+}
 
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get('Authorization')
@@ -42,7 +48,7 @@ export async function POST(request: NextRequest) {
   let sent = 0
   for (let i = 0; i < subscribers.length; i += batchSize) {
     const batch = subscribers.slice(i, i + batchSize)
-    await resend.emails.send({
+    await getResend().emails.send({
       from: process.env.EMAIL_FROM || 'Green Emblem <noreply@green-emblem.com>',
       to: batch.map(s => s.email),
       subject,

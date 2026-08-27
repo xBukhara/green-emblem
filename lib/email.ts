@@ -2,7 +2,26 @@
 // All transactional emails sent via Resend
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazily construct the Resend client so importing this module never throws.
+// `new Resend(undefined)` throws "Missing API key", and Next.js imports every
+// API route at BUILD time while collecting page data — a module-scope
+// constructor crash here breaks the whole Vercel deployment, which silently
+// pins production to the last successful build. Lazy init + a no-op guard
+// means: build always succeeds, and if RESEND_API_KEY is missing at runtime
+// emails are skipped (logged) instead of crashing the request.
+let _resend: Resend | null = null
+const resend = {
+  emails: {
+    send: (payload: Parameters<Resend['emails']['send']>[0]) => {
+      if (!process.env.RESEND_API_KEY) {
+        console.warn('[email] RESEND_API_KEY not set — skipping email:', (payload as any)?.subject)
+        return Promise.resolve({ data: null, error: { message: 'RESEND_API_KEY not set', name: 'missing_api_key' } } as any)
+      }
+      if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY)
+      return _resend.emails.send(payload)
+    },
+  },
+}
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'fizzah@greenemblem.com'
 const FROM = process.env.EMAIL_FROM || 'Green Emblem <noreply@green-emblem.com>'

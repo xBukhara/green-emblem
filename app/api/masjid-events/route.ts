@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from('masjid_events')
-    .select('*, masjids(name, city, state)')
+    .select('*, masjids(name, city, state, lat, lng)')
     .eq('status', 'active')
     .order('event_start', { ascending: true })
 

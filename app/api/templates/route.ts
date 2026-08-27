@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 
+// Force dynamic: without this Next.js prerenders this GET at BUILD time
+// (crashing the deploy if env vars are missing, and freezing the template
+// list into the build even when they aren't).
+export const dynamic = 'force-dynamic'
+
 // GET /api/templates — published templates for the design studio gallery
 export async function GET() {
   const admin = createAdminClient()
