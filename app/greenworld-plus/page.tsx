@@ -3,12 +3,13 @@ import { useEffect, useState } from 'react'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import { createClient } from '@/lib/supabase/client'
+import { ExploreNearbyMap } from '@/components/MosqueMap'
 
 type Masjid = { id: string; name: string; city: string; state: string; verified: boolean }
 type EventRow = {
   id: string; title: string; description: string | null; event_start: string; event_end: string
   masjid_id?: string
-  masjids: { name: string; city: string; state: string } | null
+  masjids: { name: string; city: string; state: string; lat: number | null; lng: number | null } | null
 }
 
 export default function GreenWorldPlusPage() {
@@ -57,6 +58,17 @@ export default function GreenWorldPlusPage() {
       if (data.profile) setProfile(data.profile)
     }
     setSaving(false)
+  }
+
+  const saveTravelRadius = async (mi: number) => {
+    if (!user) return
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    fetch('/api/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+      body: JSON.stringify({ travel_radius_miles: mi }),
+    }).catch(() => {})
   }
 
   const followedMasjid = masjids.find(m => m.id === profile?.followed_masjid_id)
@@ -116,6 +128,19 @@ export default function GreenWorldPlusPage() {
               )}
             </>
           )}
+        </div>
+
+        {/* Explore nearby — radius-bounded community map */}
+        <div style={{ background: 'rgba(15,31,15,0.55)', border: '0.5px solid rgba(212,175,110,0.14)', borderRadius: '16px', padding: '22px', marginBottom: '28px' }}>
+          <div style={{ fontFamily: 'Georgia, serif', fontSize: '9px', letterSpacing: '0.2em', color: '#d4af6e', marginBottom: '6px' }}>EXPLORE NEARBY</div>
+          <p style={{ fontFamily: 'var(--font-cormorant)', fontSize: '14px', fontStyle: 'italic', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, marginBottom: '16px' }}>
+            Set how far you&apos;re willing to travel — masjids, halal food, and community events within your boundary.
+          </p>
+          <ExploreNearbyMap
+            initialRadiusMi={profile?.travel_radius_miles}
+            events={events}
+            onRadiusSave={saveTravelRadius}
+          />
         </div>
 
         {/* Events feed */}

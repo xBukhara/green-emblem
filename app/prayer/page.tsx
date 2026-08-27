@@ -1,5 +1,6 @@
 'use client'
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import { createClient } from '@/lib/supabase/client'
@@ -10,7 +11,16 @@ const LOCATION_CACHE_KEY = 'ge_prayer_location'
 
 type Coords = { lat: number; lng: number; label?: string }
 
+// Suspense wrapper — useSearchParams requires one for static prerendering
 export default function PrayerPage() {
+  return (
+    <Suspense fallback={null}>
+      <PrayerPageInner/>
+    </Suspense>
+  )
+}
+
+function PrayerPageInner() {
   const supabase = createClient()
   const [user, setUser] = useState<any>(null)
 
@@ -23,6 +33,13 @@ export default function PrayerPage() {
   const [bearing, setBearing] = useState<number | null>(null)
   const [now, setNow] = useState(new Date())
   const [subTab, setSubTab] = useState<'prayer' | 'quran'>('prayer')
+
+  // Deep link: /prayer?tab=quran opens the Quran reader directly, and the
+  // nav's Prayer/Quran links keep working even when already on this page.
+  const searchParams = useSearchParams()
+  useEffect(() => {
+    setSubTab(searchParams.get('tab') === 'quran' ? 'quran' : 'prayer')
+  }, [searchParams])
 
   // ── Load saved preference (signed-in users) + cached location ──────────
   useEffect(() => {
