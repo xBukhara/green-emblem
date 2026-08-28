@@ -6,6 +6,12 @@ import Footer from '@/components/Footer'
 import { createClient } from '@/lib/supabase/client'
 import { CALC_METHODS, computeDayTimes, qiblaBearing, fmtTime, orderedPrayers, type CalcMethodId, type DayPrayerTimes } from '@/lib/prayer'
 import QuranReader from '@/components/QuranReader'
+import { awardPoints, fetchRewards } from '@/lib/rewards'
+
+const PRAYED_ACTIONS: Record<string, string> = {
+  fajr: 'prayer_fajr', dhuhr: 'prayer_dhuhr', asr: 'prayer_asr',
+  maghrib: 'prayer_maghrib', isha: 'prayer_isha',
+}
 
 const LOCATION_CACHE_KEY = 'ge_prayer_location'
 
@@ -90,6 +96,30 @@ function PrayerPageInner() {
     setTimes(computeDayTimes(coords.lat, coords.lng, new Date(), method))
     setBearing(qiblaBearing(coords.lat, coords.lng))
   }, [coords, method])
+
+  // ── Rewards: checking today's times counts (deduped server-side daily),
+  //    and load which prayers were already marked prayed today ────────────
+  const [prayedToday, setPrayedToday] = useState<Set<string>>(new Set())
+  useEffect(() => {
+    if (!times || !user) return
+    awardPoints(supabase, 'prayer_times')
+    fetchRewards(supabase).then(d => {
+      if (!d) return
+      const done = new Set<string>()
+      for (const [key, action] of Object.entries(PRAYED_ACTIONS)) {
+        if (d.today_actions?.includes(action)) done.add(key)
+      }
+      setPrayedToday(done)
+    })
+  }, [times, user]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const markPrayed = async (key: string) => {
+    if (!user) { window.location.href = '/auth/sign-in'; return }
+    if (prayedToday.has(key)) return
+    setPrayedToday(prev => new Set(prev).add(key)) // optimistic
+    const res = await awardPoints(supabase, PRAYED_ACTIONS[key])
+    if (!res) setPrayedToday(prev => { const n = new Set(prev); n.delete(key); return n })
+  }
 
   const savePreference = async (patch: { prayer_calc_method?: string; prayer_madhab?: string }) => {
     if (!user) return
@@ -208,7 +238,26 @@ function PrayerPageInner() {
                     <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '14px', color: i === nextIdx ? 'var(--gold)' : '#fff' }}>{p.label}</span>
                     {i === nextIdx && <span style={{ fontFamily: 'var(--font-inter)', fontSize: '9px', letterSpacing: '0.08em', color: 'var(--gold)', border: '0.5px solid rgba(212,175,110,0.4)', borderRadius: '20px', padding: '2px 8px' }}>NEXT</span>}
                   </div>
-                  <span style={{ fontFamily: 'Georgia, serif', fontSize: '15px', color: i === nextIdx ? 'var(--gold)' : 'rgba(255,255,255,0.75)' }}>{fmtTime(p.time)}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ fontFamily: 'Georgia, serif', fontSize: '15px', color: i === nextIdx ? 'var(--gold)' : 'rgba(255,255,255,0.75)' }}>{fmtTime(p.time)}</span>
+                    {PRAYED_ACTIONS[p.key] && (
+                      <button
+                        onClick={() => markPrayed(p.key)}
+                        title={prayedToday.has(p.key) ? 'Prayed — may it be accepted' : `Mark ${p.label} as prayed`}
+                        aria-pressed={prayedToday.has(p.key)}
+                        style={{
+                          width: '26px', height: '26px', borderRadius: '50%', cursor: prayedToday.has(p.key) ? 'default' : 'pointer',
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px',
+                          border: prayedToday.has(p.key) ? 'none' : '1px solid rgba(212,175,110,0.35)',
+                          background: prayedToday.has(p.key) ? '#2e6b2e' : 'transparent',
+                          color: prayedToday.has(p.key) ? '#f5f0e6' : 'rgba(212,175,110,0.6)',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        ✓
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
               {/* Both Asr times, always visible for reference regardless of the toggle above */}

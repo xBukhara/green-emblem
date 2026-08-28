@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { SURAHS, getEditions, getSurah, getTafsir, DEFAULT_SCRIPT, DEFAULT_TRANSLATION, type Edition, type SurahData, type TafsirEntry } from '@/lib/quran'
+import { createClient } from '@/lib/supabase/client'
+import { awardPoints } from '@/lib/rewards'
 
 const inputStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(212,175,110,0.25)', borderRadius: '9px', padding: '9px 12px', fontFamily: 'var(--font-inter)', fontSize: '13px', color: '#fff', outline: 'none' }
 
@@ -43,6 +45,15 @@ export default function QuranReader() {
       setLoading(false)
     })
   }, [surahNumber, scriptId, translationId])
+
+  // Rewards: reading counts once a surah has actually been on screen for a
+  // few seconds — not on merely opening the tab. Deduped server-side daily.
+  useEffect(() => {
+    if (loading || !arabic) return
+    const supabase = createClient()
+    const t = setTimeout(() => { awardPoints(supabase, 'quran_read') }, 6000)
+    return () => clearTimeout(t)
+  }, [loading, arabic])
 
   const openTafsir = async (ayahNumber: number) => {
     if (tafsirOpenFor === ayahNumber) { setTafsirOpenFor(null); return }

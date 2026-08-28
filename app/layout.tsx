@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { Cinzel, Cormorant_Garamond, Noto_Naskh_Arabic, Inter } from 'next/font/google'
+import BottomNav from '@/components/BottomNav'
+import { PointsToaster } from '@/components/RewardsWidgets'
 import './globals.css'
 
 const cinzel = Cinzel({
@@ -32,6 +34,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://green-emblem.com'),
   title: {
     default: 'Green Emblem — Islamic Events, Giving & Community',
     template: '%s | Green Emblem',
@@ -56,7 +59,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${cinzel.variable} ${cormorant.variable} ${arabic.variable} ${inter.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <BottomNav/>
+        <PointsToaster/>
+      </body>
     </html>
   )
 }

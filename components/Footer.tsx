@@ -44,6 +44,7 @@ export default function Footer() {
                 { href:'/prayer', label:'Prayer & Qibla' },
                 { href:'/prayer?tab=quran', label:'Quran' },
                 { href:'/greenworld-plus', label:'GreenWorld+' },
+                { href:'/rewards', label:'Rewards' },
                 { href:'/shop', label:'Islamic Shop' },
               ].map(({ href, label }) => (
                 <Link key={href} href={href} style={linkStyle}>{label}</Link>
