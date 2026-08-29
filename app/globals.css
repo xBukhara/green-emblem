@@ -24,7 +24,25 @@ html { scroll-behavior: smooth; }
   --font-cinzel:    var(--font-cinzel), 'Palatino Linotype', serif;
   --font-cormorant: var(--font-cormorant), Georgia, serif;
   --font-arabic:    var(--font-arabic), serif;
+  /* Quranic script stack — see @font-face below */
+  --font-uthmani:   'KFGQPC Uthmanic Script HAFS', var(--font-amiri-quran), var(--font-arabic), serif;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── QURANIC SCRIPT ────────────────────────────────────────────────────
+   Optional upgrade: drop the official KFGQPC Uthmanic Script HAFS font
+   into /public/fonts/ and it is used automatically. Until then the stack
+   falls through to Amiri Quran (loaded via next/font in app/layout.tsx),
+   which is purpose-built for Quranic text and renders every Uthmani
+   diacritic correctly — so the reader is never left with a face that
+   mangles the marks. */
+@font-face {
+  font-family: 'KFGQPC Uthmanic Script HAFS';
+  src: url('/fonts/UthmanicHafs.woff2') format('woff2'),
+       url('/fonts/UthmanicHafs.ttf')  format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 
 /* ── BASE ── */

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Cinzel, Cormorant_Garamond, Noto_Naskh_Arabic, Inter } from 'next/font/google'
+import { Cinzel, Cormorant_Garamond, Noto_Naskh_Arabic, Inter, Amiri_Quran } from 'next/font/google'
 import BottomNav from '@/components/BottomNav'
 import { PointsToaster } from '@/components/RewardsWidgets'
 import './globals.css'
@@ -23,6 +23,18 @@ const arabic = Noto_Naskh_Arabic({
   subsets: ['arabic'],
   weight: ['400', '500'],
   variable: '--font-arabic',
+  display: 'swap',
+})
+
+// Quranic typesetting face. Amiri Quran is purpose-built for Quranic text
+// (full Uthmani diacritic coverage) and is always available from Google
+// Fonts, so the reader can never fall back to a face that mangles the
+// marks. If /public/fonts/UthmanicHafs.woff2 is present (see APPLY notes),
+// the @font-face in globals.css takes precedence over this.
+const amiriQuran = Amiri_Quran({
+  subsets: ['arabic'],
+  weight: ['400'],
+  variable: '--font-amiri-quran',
   display: 'swap',
 })
 
@@ -58,7 +70,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${cinzel.variable} ${cormorant.variable} ${arabic.variable} ${inter.variable}`}>
+    <html lang="en" className={`${cinzel.variable} ${cormorant.variable} ${arabic.variable} ${inter.variable} ${amiriQuran.variable}`}>
       <body>
         {children}
         <BottomNav/>
