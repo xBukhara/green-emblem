@@ -1,12 +1,10 @@
-// ── Quran data layer ─────────────────────────────────────────────────────
-// Arabic text + translations: AlQuran Cloud (api.alquran.cloud) — free,
-// no key, stable for years. Tafsir: quranapi.pages.dev — confirmed to
-// include Ibn Kathir among its sources.
+// ── Quran client data layer ──────────────────────────────────────────────
+// All Quranic text is fetched through our own /api/quran/* routes, which
+// proxy the Quran.com API v4 (the API behind quran.com) with server-side
+// caching. See lib/quran-api.ts for the upstream contract and the reason
+// the previous source was replaced.
 //
-// Translation/script pickers are populated from the LIVE edition list
-// rather than hardcoded — if a specific edition (e.g. a Taqi Usmani
-// translation) isn't actually hosted there, it simply won't appear,
-// rather than the UI promising something that 404s.
+// Script is Uthmani only — there is deliberately no script picker.
 
 export const SURAHS = [
   { number: 1, name: 'Al-Fatihah', arabicName: 'الفاتحة', ayahs: 7, type: 'Meccan' },
@@ -125,66 +123,79 @@ export const SURAHS = [
   { number: 114, name: 'An-Nas', arabicName: 'الناس', ayahs: 6, type: 'Meccan' },
 ] as const
 
-const QURAN_BASE = 'https://api.alquran.cloud/v1'
-const TAFSIR_BASE = 'https://quranapi.pages.dev/api'
-
-// Curated defaults we're confident exist (well-known, long-standing editions).
-// The actual picker is still populated live — this is just the fallback
-// order if the live list is unreachable.
-export const DEFAULT_SCRIPT = 'quran-uthmani'
-export const DEFAULT_TRANSLATION = 'en.sahih'
-const KNOWN_TRANSLATIONS = [
-  { identifier: 'en.sahih', name: 'Saheeh International' },
-  { identifier: 'en.yusufali', name: 'Abdullah Yusuf Ali' },
-  { identifier: 'en.pickthall', name: 'Mohammed Marmaduke Pickthall' },
-  { identifier: 'en.hilali', name: 'Hilali & Khan' },
-]
-
-export type Edition = { identifier: string; name: string; englishName: string; type: string; language: string }
-
-// Fetch the live edition list, filtered. Falls back to the curated set
-// above if the API is unreachable — never leaves the picker empty.
-export async function getEditions(type: 'translation' | 'quran', language?: string): Promise<Edition[]> {
-  try {
-    const params = new URLSearchParams({ format: 'text', type })
-    if (language) params.set('language', language)
-    const res = await fetch(`${QURAN_BASE}/edition?${params}`)
-    if (!res.ok) throw new Error('bad response')
-    const json = await res.json()
-    const editions: Edition[] = json.data || []
-    if (editions.length === 0) throw new Error('empty')
-    return editions
-  } catch {
-    if (type === 'translation') {
-      return KNOWN_TRANSLATIONS.map(t => ({ identifier: t.identifier, name: t.name, englishName: t.name, type: 'translation', language: 'en' }))
-    }
-    return [{ identifier: DEFAULT_SCRIPT, name: 'Uthmani', englishName: 'Uthmani', type: 'quran', language: 'ar' }]
-  }
+export type Chapter = {
+  id: number
+  name_simple: string
+  name_arabic: string
+  translated_name: string
+  verses_count: number
+  revelation_place: string
+  bismillah_pre: boolean
 }
 
-export type Ayah = { number: number; numberInSurah: number; text: string }
-export type SurahData = { number: number; name: string; englishName: string; ayahs: Ayah[] }
+export type Verse = { number: number; key: string; uthmani: string; translation: string }
 
-export async function getSurah(surahNumber: number, editionIdentifier: string): Promise<SurahData | null> {
+export type SurahPayload = {
+  chapter: Chapter
+  showBismillah: boolean
+  bismillah: string
+  verses: Verse[]
+  translationId: number
+}
+
+export type TranslationOption = { id: number; name: string; author: string }
+
+// Quran.com's own default translation.
+export const DEFAULT_TRANSLATION_ID = 131
+
+export async function fetchChapters(): Promise<Chapter[] | null> {
   try {
-    const res = await fetch(`${QURAN_BASE}/surah/${surahNumber}/${editionIdentifier}`)
+    const res = await fetch('/api/quran/chapters')
     if (!res.ok) return null
     const json = await res.json()
-    return json.data || null
+    return Array.isArray(json.chapters) ? json.chapters : null
   } catch {
     return null
   }
 }
 
-export type TafsirEntry = { author: string; content: string; groupVerse: string | null }
-
-export async function getTafsir(surahNumber: number, ayahNumber: number): Promise<TafsirEntry[]> {
+export async function fetchTranslations(): Promise<TranslationOption[]> {
   try {
-    const res = await fetch(`${TAFSIR_BASE}/tafsir/${surahNumber}_${ayahNumber}.json`)
+    const res = await fetch('/api/quran/translations')
     if (!res.ok) return []
     const json = await res.json()
-    return json.tafsirs || []
+    return json.translations || []
   } catch {
     return []
   }
+}
+
+// Returns null on ANY failure — the reader then shows an honest error.
+// It must never render partial or uncertain Quranic text.
+export async function fetchSurah(id: number, translationId: number): Promise<SurahPayload | null> {
+  try {
+    const res = await fetch(`/api/quran/surah/${id}?translation=${translationId}`)
+    if (!res.ok) return null
+    const json = await res.json()
+    if (!json?.verses?.length) return null
+    return json as SurahPayload
+  } catch {
+    return null
+  }
+}
+
+export async function fetchTafsir(surah: number, ayah: number): Promise<{ text: string; name: string } | null> {
+  try {
+    const res = await fetch(`/api/quran/tafsir/${surah}/${ayah}`)
+    if (!res.ok) return null
+    const json = await res.json()
+    return json.tafsir || null
+  } catch {
+    return null
+  }
+}
+
+// Arabic-Indic numerals for the end-of-ayah marker (١٢٣…)
+export function toArabicNumber(n: number): string {
+  return String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)])
 }
