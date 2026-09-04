@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { Cinzel, Cormorant_Garamond, Noto_Naskh_Arabic, Inter, Amiri_Quran } from 'next/font/google'
 import BottomNav from '@/components/BottomNav'
-import { PointsToaster } from '@/components/RewardsWidgets'
 import './globals.css'
 
 const cinzel = Cinzel({
@@ -74,7 +73,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         <BottomNav/>
-        <PointsToaster/>
       </body>
     </html>
   )

@@ -1,3 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── shadcn/ui semantic tokens, mapped to the Green Emblem palette ──────
+   Values are HSL triplets (no hsl() wrapper) so Tailwind can compose them
+   with opacity modifiers, e.g. bg-primary/10. */
+@layer base {
+  :root {
+    --background:            120 35% 9%;    /* #0f1f0f deep forest   */
+    --foreground:            40 43% 93%;    /* #f5f0e6 cream         */
+    --card:                  120 40% 12%;
+    --card-foreground:       40 43% 93%;
+    --popover:               120 38% 7%;
+    --popover-foreground:    40 43% 93%;
+    --primary:               38 54% 63%;    /* #d4af6e gold          */
+    --primary-foreground:    120 35% 9%;
+    --secondary:             120 40% 17%;   /* #1a3d1a               */
+    --secondary-foreground:  40 43% 93%;
+    --muted:                 120 20% 16%;
+    --muted-foreground:      120 8% 65%;
+    --accent:                120 40% 30%;   /* #2e6b2e forest green  */
+    --accent-foreground:     40 43% 93%;
+    --destructive:           1 65% 55%;
+    --destructive-foreground:40 43% 93%;
+    --border:                38 30% 26%;
+    --input:                 120 25% 20%;
+    --ring:                  38 54% 63%;
+    --radius: 0.75rem;
+  }
+
+  /* Tailwind's border utilities assume preflight's border defaults.
+     Preflight is off here, so supply exactly those three declarations —
+     and `border-width: 0` is NOT optional: the CSS initial width is
+     `medium` (3px), so setting only `border-style: solid` paints a 3px
+     border around every element on the page. Inline styles and class
+     rules both outrank `*`, so the not-yet-migrated pages are untouched. */
+  *, ::before, ::after {
+    border-width: 0;
+    border-style: solid;
+    border-color: hsl(var(--border));
+  }
+}
+
 /* ── RESET ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }

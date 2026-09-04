@@ -31,11 +31,6 @@ export async function POST(request: NextRequest) {
       p_user_id: donation.user_id,
       p_amount:  donation.amount,
     })
-    // Rewards: giving earns points (server-side only; capped daily in SQL).
-    // Best-effort — a rewards failure must never fail the donation.
-    await admin.rpc('award_points', { p_user: donation.user_id, p_action: 'donation' }).then(
-      () => {}, () => {}
-    )
   }
 
   return NextResponse.json({ success: true, donation })

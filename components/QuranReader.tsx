@@ -5,8 +5,6 @@ import {
   toArabicNumber, DEFAULT_TRANSLATION_ID,
   type Chapter, type SurahPayload, type TranslationOption,
 } from '@/lib/quran'
-import { createClient } from '@/lib/supabase/client'
-import { awardPoints } from '@/lib/rewards'
 
 const inputStyle: React.CSSProperties = {
   background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(212,175,110,0.25)',
@@ -75,14 +73,6 @@ export default function QuranReader() {
     })
     return () => { cancelled = true }
   }, [surahNumber, translationId])
-
-  // Rewards: reading counts after the text has genuinely been on screen
-  useEffect(() => {
-    if (loading || !data) return
-    const supabase = createClient()
-    const t = setTimeout(() => { awardPoints(supabase, 'quran_read') }, 6000)
-    return () => clearTimeout(t)
-  }, [loading, data])
 
   const retry = useCallback(() => {
     setLoading(true); setFailed(false)

@@ -1,90 +1,116 @@
-'use client'
 import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
-// ── Explore — the single front door to everything beyond giving ──────────
-const SECTIONS = [
+export const metadata = {
+  title: 'Explore',
+  description: 'Worship, community, and media — every part of Green Emblem in one place.',
+}
+
+type Section = {
+  href: string | null
+  tag: string
+  tone: 'default' | 'green' | 'violet' | 'muted'
+  title: string
+  desc: string
+}
+
+const SECTIONS: Section[] = [
   {
-    href: '/greenworld-plus', accent: '#9b8ec4', tag: 'COMMUNITY',
+    href: '/greenworld-plus', tone: 'violet', tag: 'COMMUNITY',
     title: 'GreenWorld+',
     desc: 'Follow your masjid, see local events, and explore masjids and halal food within your travel radius.',
   },
   {
-    href: '/prayer', accent: '#d4af6e', tag: 'WORSHIP',
+    href: '/prayer', tone: 'default', tag: 'WORSHIP',
     title: 'Prayer & Qibla',
     desc: 'Accurate prayer times for your location, a live Qibla compass, and your madhab preferences.',
   },
   {
-    href: '/prayer?tab=quran', accent: '#d4af6e', tag: 'WORSHIP',
+    href: '/prayer?tab=quran', tone: 'default', tag: 'WORSHIP',
     title: 'Quran',
-    desc: 'Read any surah with translation and tafsir — a few minutes a day earns rewards points.',
+    desc: 'Read any surah in Uthmani script with translation and Tafsir Ibn Kathir — your place remembered.',
   },
   {
-    href: '/greentv', accent: '#5a9e5a', tag: 'MEDIA',
+    href: '/greentv', tone: 'green', tag: 'MEDIA',
     title: 'GreenTV',
     desc: 'News, community clips, and live moments from the Green Emblem community.',
   },
   {
-    href: '/greenfitness', accent: '#5a9e5a', tag: 'MEDIA',
+    href: '/greenfitness', tone: 'green', tag: 'MEDIA',
     title: 'GreenFitness',
     desc: 'Fitness coaching and training content, rooted in discipline and purpose.',
   },
   {
-    href: '/rewards', accent: '#f0d48a', tag: 'REWARDS',
-    title: 'Rewards',
-    desc: 'Daily prayer, Quran, and community engagement earn points — redeem them for Green Emblem merch.',
-  },
-  {
-    href: '/shop', accent: '#d4af6e', tag: 'SHOP',
+    href: '/shop', tone: 'default', tag: 'SHOP',
     title: 'Islamic Shop',
     desc: 'Curated Islamic products and Green Emblem merchandise.',
   },
   {
-    href: null, accent: '#8fa38f', tag: 'COMING SOON',
+    href: null, tone: 'muted', tag: 'COMING SOON',
     title: 'Local Businesses',
     desc: 'Muslim-owned businesses near you — reviews, halal verification, and community-first promotion.',
   },
-] as const
+]
 
 export default function ExplorePage() {
   return (
     <>
-      <div className="bg-tile" aria-hidden="true"/>
+      <div className="bg-tile" aria-hidden="true" />
       <Nav />
-      <main style={{ position: 'relative', zIndex: 2, minHeight: '100dvh', padding: '120px 24px 80px', maxWidth: '860px', margin: '0 auto' }}>
 
-        <div style={{ textAlign: 'center', marginBottom: '44px' }}>
-          <div style={{ fontFamily: 'var(--font-cinzel)', fontSize: '10px', letterSpacing: '0.3em', color: 'var(--gold)', marginBottom: '16px' }}>EXPLORE</div>
-          <h1 style={{ fontFamily: 'var(--font-cinzel)', fontSize: 'clamp(28px,5vw,44px)', fontWeight: 500, color: '#fff', marginBottom: '12px' }}>Everything Green Emblem</h1>
-          <p style={{ fontFamily: 'var(--font-cormorant)', fontSize: '17px', fontStyle: 'italic', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7 }}>
-            Worship, community, media, and rewards — one place.
+      <main className="relative z-[2] mx-auto min-h-[100dvh] max-w-[900px] px-6 pb-20 pt-32">
+
+        <header className="mb-11 text-center">
+          <div className="mb-4 font-cinzel text-[10px] tracking-[0.3em] text-gold">EXPLORE</div>
+          <h1 className="mb-3 font-cinzel text-[clamp(28px,5vw,44px)] font-medium text-white">
+            Everything Green Emblem
+          </h1>
+          <p className="font-cormorant text-[17px] italic leading-[1.7] text-white/50">
+            Worship, community, and media — one place.
           </p>
-        </div>
+        </header>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '14px' }}>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {SECTIONS.map(s => {
-            const inner = (
-              <>
-                <div style={{ fontFamily: 'Georgia, serif', fontSize: '9px', letterSpacing: '0.22em', color: s.accent, marginBottom: '10px' }}>{s.tag}</div>
-                <div style={{ fontFamily: 'var(--font-cinzel)', fontSize: '18px', color: s.href ? '#fff' : 'rgba(255,255,255,0.45)', marginBottom: '8px' }}>{s.title}</div>
-                <p style={{ fontFamily: 'var(--font-cormorant)', fontSize: '14px', fontStyle: 'italic', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, margin: 0, flex: 1 }}>{s.desc}</p>
-                {s.href && <div style={{ fontFamily: 'var(--font-inter)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', color: s.accent, marginTop: '14px' }}>OPEN →</div>}
-              </>
+            const body = (
+              <Card
+                className={cn(
+                  'flex h-full flex-col p-6 transition-all duration-200',
+                  s.href
+                    ? 'hover:-translate-y-1 hover:border-gold/35'
+                    : 'opacity-70'
+                )}
+              >
+                <Badge variant={s.tone} className="mb-3.5 self-start">{s.tag}</Badge>
+                <h2 className={cn('mb-2 font-cinzel text-lg', s.href ? 'text-white' : 'text-white/50')}>
+                  {s.title}
+                </h2>
+                <p className="flex-1 font-cormorant text-sm italic leading-relaxed text-white/45">
+                  {s.desc}
+                </p>
+                {s.href && (
+                  <div className="mt-4 flex items-center gap-1.5 font-cinzel text-[9px] tracking-[0.18em] text-gold">
+                    OPEN
+                    <ArrowRight className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-1" />
+                  </div>
+                )}
+              </Card>
             )
-            const style: React.CSSProperties = {
-              display: 'flex', flexDirection: 'column',
-              background: 'rgba(15,31,15,0.55)', borderRadius: '16px', padding: '22px',
-              border: `0.5px solid ${s.href ? s.accent + '30' : 'rgba(255,255,255,0.07)'}`,
-              textDecoration: 'none', transition: 'transform 0.15s, border-color 0.15s',
-              opacity: s.href ? 1 : 0.75,
-            }
-            return s.href
-              ? <Link key={s.title} href={s.href} style={style}>{inner}</Link>
-              : <div key={s.title} style={style}>{inner}</div>
+
+            return s.href ? (
+              <Link key={s.title} href={s.href} className="group no-underline">{body}</Link>
+            ) : (
+              <div key={s.title}>{body}</div>
+            )
           })}
         </div>
       </main>
+
       <Footer />
     </>
   )

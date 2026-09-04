@@ -1,79 +1,78 @@
 import Link from 'next/link'
+import Image from 'next/image'
+import { Separator } from '@/components/ui/separator'
+
+const PLATFORM = [
+  { href: '/sadaqah',           label: 'Baab As-Sadaqah' },
+  { href: '/prayer',            label: 'Prayer & Qibla' },
+  { href: '/prayer?tab=quran',  label: 'Quran' },
+  { href: '/greenworld-plus',   label: 'GreenWorld+' },
+  { href: '/shop',              label: 'Islamic Shop' },
+]
+
+const COMPANY = [
+  { href: '/about',   label: 'About Us' },
+  { href: '/contact', label: 'Contact' },
+  { href: '/terms',   label: 'Terms of Service' },
+  { href: '/privacy', label: 'Privacy Policy' },
+]
+
+const linkClass =
+  'font-cormorant text-sm italic text-white/55 no-underline transition-colors hover:text-gold'
+
+const colTitleClass =
+  'mb-4 font-cinzel text-[9px] tracking-[0.2em] text-gold/80'
 
 export default function Footer() {
-  const Logo = () => (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src="/icon.png" alt="" width={30} height={30} style={{ borderRadius:'7px', display:'block' }} aria-hidden="true"/>
-  )
-
-  const linkStyle: React.CSSProperties = {
-    fontSize: '14px', color: 'rgba(255,255,255,0.55)', textDecoration: 'none',
-    fontStyle: 'italic', fontFamily: 'var(--font-cormorant)', transition: 'color 0.15s',
-  }
-
-  const colTitle: React.CSSProperties = {
-    fontFamily: 'var(--font-cinzel)', fontSize: '9px', letterSpacing: '0.2em',
-    color: 'var(--gold)', marginBottom: '14px', opacity: 0.8,
-  }
-
   return (
-    <footer style={{ background:'#080f08', borderTop:'0.5px solid rgba(212,175,110,0.12)', padding:'56px 40px 32px' }}>
-      <div style={{ maxWidth:'1200px', margin:'0 auto' }}>
-        <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr', gap:'48px', marginBottom:'40px' }}>
+    <footer className="border-t border-gold/10 bg-[#080f08] px-6 pb-8 pt-14 lg:px-10">
+      <div className="mx-auto max-w-[1200px]">
+        <div className="mb-10 grid gap-10 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr] lg:gap-12">
 
           {/* Brand */}
           <div>
-            <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'14px' }}>
-              <Logo />
-              <span style={{ fontFamily:'var(--font-cinzel)', fontSize:'13px', letterSpacing:'0.2em', color:'#e9e4d8' }}>GREEN <span style={{ color:'var(--gold)' }}>★</span> EMBLEM</span>
+            <div className="mb-4 flex items-center gap-2.5">
+              <Image src="/icon.png" alt="" width={30} height={30} className="rounded-md" aria-hidden="true" />
+              <span className="font-cinzel text-[13px] tracking-[0.2em] text-cream">
+                GREEN <span className="text-gold">★</span> EMBLEM
+              </span>
             </div>
-            <div style={{ fontFamily:'var(--font-cinzel)', fontSize:'9px', letterSpacing:'0.34em', color:'rgba(212,175,110,0.6)', marginBottom:'12px' }}>
+            <div className="mb-3 font-cinzel text-[9px] tracking-[0.34em] text-gold/60">
               FAITH · STRENGTH · PURPOSE
             </div>
-            <p style={{ fontSize:'14px', color:'rgba(255,255,255,0.35)', fontStyle:'italic', lineHeight:1.7, maxWidth:'260px', fontFamily:'var(--font-cormorant)' }}>
-              Islamic events, giving & community. Every celebration honoured with intention.
+            <p className="max-w-[260px] font-cormorant text-sm italic leading-relaxed text-white/35">
+              Islamic events, giving &amp; community. Every celebration honoured with intention.
             </p>
           </div>
 
           {/* Platform */}
           <div>
-            <div style={colTitle}>Platform</div>
-            <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
-              {[
-                { href:'/sadaqah', label:'Baab As-Sadaqah' },
-                { href:'/prayer', label:'Prayer & Qibla' },
-                { href:'/prayer?tab=quran', label:'Quran' },
-                { href:'/greenworld-plus', label:'GreenWorld+' },
-                { href:'/rewards', label:'Rewards' },
-                { href:'/shop', label:'Islamic Shop' },
-              ].map(({ href, label }) => (
-                <Link key={href} href={href} style={linkStyle}>{label}</Link>
+            <div className={colTitleClass}>Platform</div>
+            <div className="flex flex-col gap-2.5">
+              {PLATFORM.map(({ href, label }) => (
+                <Link key={href} href={href} className={linkClass}>{label}</Link>
               ))}
             </div>
           </div>
 
           {/* Company */}
           <div>
-            <div style={colTitle}>Company</div>
-            <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
-              {[
-                { href:'/about', label:'About Us' },
-                { href:'/contact', label:'Contact' },
-                { href:'/terms', label:'Terms of Service' },
-                { href:'/privacy', label:'Privacy Policy' },
-              ].map(({ href, label }) => (
-                <Link key={href} href={href} style={linkStyle}>{label}</Link>
+            <div className={colTitleClass}>Company</div>
+            <div className="flex flex-col gap-2.5">
+              {COMPANY.map(({ href, label }) => (
+                <Link key={href} href={href} className={linkClass}>{label}</Link>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Bottom bar */}
-        <div style={{ borderTop:'0.5px solid rgba(255,255,255,0.06)', paddingTop:'20px', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:'12px' }}>
-          <span style={{ fontFamily:'var(--font-cinzel)', fontSize:'11px', letterSpacing:'0.08em', color:'rgba(255,255,255,0.3)' }}>
+        <Separator className="bg-white/[0.06]" />
+
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-5">
+          <span className="font-cinzel text-[11px] tracking-wide text-white/30">
             © 2026 Green Emblem. All rights reserved.
           </span>
-          <span style={{ fontFamily:'var(--font-arabic)', fontSize:'14px', color:'var(--gold)', opacity:0.45 }} lang="ar">
+          <span className="font-arabic text-sm text-gold/45" lang="ar">
             بَارَكَ اللَّهُ فِيهِ
           </span>
         </div>

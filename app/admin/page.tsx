@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { FONT_PAIRS, PATTERNS, OVERLAYS } from '@/lib/campaign-design'
 import { MosqueAutocomplete, type MosquePlace } from '@/components/MosqueMap'
 
-const PANELS = ['overview','campaigns','requests','templates','masjids','orders','rewards','users','newsletter'] as const
+const PANELS = ['overview','campaigns','requests','templates','masjids','orders','users','newsletter'] as const
 type Panel = typeof PANELS[number]
 
 export default function AdminPage() {
@@ -25,7 +25,6 @@ export default function AdminPage() {
   const [templates, setTemplates] = useState<any[]>([])
   const [masjids, setMasjids] = useState<any[]>([])
   const [masjidEvents, setMasjidEvents] = useState<any[]>([])
-  const [redemptions, setRedemptions] = useState<any[]>([])
   const [masjidModal, setMasjidModal] = useState(false)
   const [masjidPlace, setMasjidPlace] = useState<MosquePlace | null>(null)
   const [masjidForm, setMasjidForm] = useState({ name:'', instagram_handle:'', facebook_page:'', phone:'', website:'', verified:true, auto_sync_enabled:false })
@@ -75,13 +74,6 @@ export default function AdminPage() {
       supabase.from('masjids').select('*').eq('active', true).order('name', { ascending: true }),
       supabase.from('masjid_events').select('*').order('event_start', { ascending: false }),
     ])
-
-    // Rewards redemption queue — loaded separately so a missing table
-    // (rewards.sql not run yet) never breaks the rest of the console.
-    supabase.from('redemptions')
-      .select('*, rewards_catalog(name, points_cost), profiles:user_id(email, full_name)')
-      .order('created_at', { ascending: false })
-      .then(({ data }: any) => setRedemptions(data || []))
 
     const camps = campaignsRes.data || []
     const ords = ordersRes.data || []
@@ -274,7 +266,6 @@ export default function AdminPage() {
     {id:'templates',label:'Design Templates',icon:'▦'},
     {id:'masjids',label:'Masjids & Events',icon:'\u25b3'},
     {id:'orders',label:'Orders',icon:'◐'},
-    {id:'rewards',label:'Rewards',icon:'✦'},
     {id:'users',label:'Users',icon:'◑'},
     {id:'newsletter',label:'Newsletter',icon:'◓'},
   ]
@@ -682,53 +673,6 @@ export default function AdminPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          </div>
-        )}
-
-        {/* ── REWARDS REDEMPTIONS ── */}
-        {panel === 'rewards' && (
-          <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
-            {sectionTitle(`Reward redemptions (${redemptions.filter(r => r.status==='pending').length} pending)`)}
-            <div style={c.card}>
-              {redemptions.length === 0 ? (
-                <p style={{fontFamily:'Georgia,serif',fontSize:'13px',color:'rgba(255,255,255,0.35)',fontStyle:'italic',padding:'8px'}}>No redemptions yet. (If this stays empty after users redeem, make sure rewards.sql has been run in Supabase.)</p>
-              ) : (
-                <table style={{width:'100%',borderCollapse:'collapse'}}>
-                  <thead><tr>{['User','Reward','Points','Ship to','Requested','Status'].map(h => <th key={h} style={c.th}>{h}</th>)}</tr></thead>
-                  <tbody>
-                    {redemptions.map(r => (
-                      <tr key={r.id}>
-                        <td style={c.td}>{r.profiles?.full_name || r.profiles?.email || '—'}</td>
-                        <td style={c.td}>{r.rewards_catalog?.name || '—'}</td>
-                        <td style={{...c.td,color:'#d4af6e'}}>✦ {r.points_spent?.toLocaleString()}</td>
-                        <td style={{...c.td,fontSize:'11px',color:'rgba(255,255,255,0.5)',lineHeight:1.5}}>
-                          {r.shipping_address ? (
-                            <>{r.shipping_address.name}<br/>{r.shipping_address.line1}{r.shipping_address.line2 ? `, ${r.shipping_address.line2}` : ''}<br/>{r.shipping_address.city}, {r.shipping_address.state} {r.shipping_address.zip}</>
-                          ) : '—'}
-                        </td>
-                        <td style={{...c.td,fontSize:'11px',color:'rgba(255,255,255,0.3)'}}>{new Date(r.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</td>
-                        <td style={c.td}>
-                          {r.status === 'pending' ? (
-                            <button
-                              onClick={async () => {
-                                const now = new Date().toISOString()
-                                await supabase.from('redemptions').update({status:'fulfilled',fulfilled_at:now}).eq('id',r.id)
-                                setRedemptions(rs => rs.map(x => x.id===r.id?{...x,status:'fulfilled',fulfilled_at:now}:x))
-                              }}
-                              style={{fontFamily:'Georgia,serif',fontSize:'10px',fontWeight:600,color:'#0f1f0f',background:'#d4af6e',border:'none',borderRadius:'6px',padding:'6px 12px',cursor:'pointer'}}
-                            >
-                              Mark shipped
-                            </button>
-                          ) : (
-                            <span style={{fontFamily:'Georgia,serif',fontSize:'10px',letterSpacing:'0.08em',textTransform:'uppercase',color:r.status==='fulfilled'?'#5a9e5a':'rgba(255,255,255,0.35)'}}>{r.status}</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
             </div>
           </div>
         )}

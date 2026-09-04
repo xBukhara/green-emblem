@@ -4,7 +4,6 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import { createClient } from '@/lib/supabase/client'
 import { ExploreNearbyMap } from '@/components/MosqueMap'
-import { awardPoints } from '@/lib/rewards'
 
 type Masjid = { id: string; name: string; city: string; state: string; verified: boolean }
 type EventRow = {
@@ -36,10 +35,6 @@ export default function GreenWorldPlusPage() {
     })
     fetch('/api/masjid-events').then(r => r.json()).then(d => { setEvents(d.events || []); setLoadingEvents(false) }).catch(() => setLoadingEvents(false))
 
-    // Rewards: staying close to the community counts (deduped server-side
-    // daily) — awarded after a short dwell, not a drive-by.
-    const t = setTimeout(() => { awardPoints(supabase, 'community') }, 6000)
-    return () => clearTimeout(t)
   }, [])
 
   useEffect(() => {
