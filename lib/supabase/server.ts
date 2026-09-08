@@ -22,6 +22,18 @@ export function createClient() {
   )
 }
 
+// Public client — anon key, and crucially NO cookie access. Reading cookies
+// opts a route into dynamic rendering, so any page that only needs public
+// data (e.g. the homepage previews) must use this instead of createClient()
+// or it will hit the database on every single request.
+export function createPublicClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+}
+
 // Admin client — bypasses RLS. Server-side only, never expose to client.
 export function createAdminClient() {
   return createSupabaseClient(

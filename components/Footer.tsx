@@ -18,14 +18,14 @@ const COMPANY = [
 ]
 
 const linkClass =
-  'font-cormorant text-sm italic text-white/55 no-underline transition-colors hover:text-gold'
+  'font-cormorant text-sm italic text-white/75 no-underline transition-colors hover:text-white'
 
 const colTitleClass =
   'mb-4 font-cinzel text-[9px] tracking-[0.2em] text-gold/80'
 
 export default function Footer() {
   return (
-    <footer className="border-t border-gold/10 bg-[#080f08] px-6 pb-8 pt-14 lg:px-10">
+    <footer className="border-t border-gold/10 bg-forest-deepest px-5 sm:px-6 pb-8 pt-14 lg:px-10">
       <div className="mx-auto max-w-[1200px]">
         <div className="mb-10 grid gap-10 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr] lg:gap-12">
 

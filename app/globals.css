@@ -7,24 +7,24 @@
    with opacity modifiers, e.g. bg-primary/10. */
 @layer base {
   :root {
-    --background:            120 35% 9%;    /* #0f1f0f deep forest   */
+    --background:            120 44% 14%;   /* #143314 forest        */
     --foreground:            40 43% 93%;    /* #f5f0e6 cream         */
-    --card:                  120 40% 12%;
+    --card:                  120 40% 18%;   /* #1b3f1b               */
     --card-foreground:       40 43% 93%;
-    --popover:               120 38% 7%;
+    --popover:               120 45% 10%;   /* #0e250e               */
     --popover-foreground:    40 43% 93%;
     --primary:               38 54% 63%;    /* #d4af6e gold          */
-    --primary-foreground:    120 35% 9%;
-    --secondary:             120 40% 17%;   /* #1a3d1a               */
+    --primary-foreground:    120 45% 10%;
+    --secondary:             120 37% 22%;   /* #234c23               */
     --secondary-foreground:  40 43% 93%;
-    --muted:                 120 20% 16%;
-    --muted-foreground:      120 8% 65%;
+    --muted:                 120 22% 22%;
+    --muted-foreground:      120 6% 72%;
     --accent:                120 40% 30%;   /* #2e6b2e forest green  */
     --accent-foreground:     40 43% 93%;
     --destructive:           1 65% 55%;
     --destructive-foreground:40 43% 93%;
-    --border:                38 30% 26%;
-    --input:                 120 25% 20%;
+    --border:                38 28% 32%;
+    --input:                 120 25% 26%;
     --ring:                  38 54% 63%;
     --radius: 0.75rem;
   }
@@ -48,9 +48,11 @@ html { scroll-behavior: smooth; }
 
 /* ── BRAND TOKENS ── */
 :root {
-  --forest:       #2e6b2e;
-  --forest-deep:  #1a3d1a;
-  --forest-dark:  #0f1f0f;
+  --forest:        #2e6b2e;
+  --forest-deep:   #1b3f1b;   /* card / raised surface */
+  --forest-dark:   #143314;   /* page background — lighter than the old #0f1f0f */
+  --forest-deepest:#0e250e;   /* nav, footer, deepest chrome */
+  --forest-raised: #234c23;
   --forest-mid:   #3a7a3a;
   --forest-light: #5a9e5a;
   --gold:         #d4af6e;
@@ -97,6 +99,12 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
+
+/* ── LINKS ──
+   Links read white by default across the site; gold is reserved for
+   headings, CTAs, icons and active indicators. */
+a { color: #fff; }
+a:hover { color: var(--gold-light); }
 
 /* ── TYPOGRAPHY HELPERS ── */
 .font-cinzel    { font-family: var(--font-cinzel); }
@@ -179,7 +187,7 @@ body {
 
 /* ── SURFACE CARD ── */
 .ge-card {
-  background: rgba(15,31,15,0.7);
+  background: rgba(27,63,27,0.72);
   border: 0.5px solid rgba(212,175,110,0.15);
   border-radius: 16px;
   backdrop-filter: blur(12px);

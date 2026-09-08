@@ -63,7 +63,7 @@ export default function ExplorePage() {
       <div className="bg-tile" aria-hidden="true" />
       <Nav />
 
-      <main className="relative z-[2] mx-auto min-h-[100dvh] max-w-[900px] px-6 pb-20 pt-32">
+      <main className="relative z-[2] mx-auto min-h-[100dvh] max-w-[900px] px-5 pb-20 pt-32 sm:px-6">
 
         <header className="mb-11 text-center">
           <div className="mb-4 font-cinzel text-[10px] tracking-[0.3em] text-gold">EXPLORE</div>
@@ -94,9 +94,9 @@ export default function ExplorePage() {
                   {s.desc}
                 </p>
                 {s.href && (
-                  <div className="mt-4 flex items-center gap-1.5 font-cinzel text-[9px] tracking-[0.18em] text-gold">
+                  <div className="mt-4 flex items-center gap-1.5 font-cinzel text-[9px] tracking-[0.18em] text-white">
                     OPEN
-                    <ArrowRight className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-1" />
+                    <ArrowRight className="h-3 w-3 text-gold transition-transform duration-200 group-hover:translate-x-1" />
                   </div>
                 )}
               </Card>

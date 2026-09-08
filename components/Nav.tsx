@@ -64,13 +64,13 @@ export default function Nav() {
         aria-label="Main navigation"
         className={cn(
           'fixed inset-x-0 top-0 z-[100] h-[68px] border-b transition-colors duration-300',
-          'backdrop-blur-xl supports-[backdrop-filter]:bg-forest-dark/80',
-          scrolled ? 'border-gold/20 bg-[#080f08]/95' : 'border-gold/10 bg-forest-dark/85'
+          'backdrop-blur-xl',
+          scrolled ? 'border-gold/25 bg-forest-deepest/95' : 'border-gold/10 bg-forest-dark/85'
         )}
       >
         <div className="mx-auto flex h-full max-w-[1200px] items-center justify-between px-6 lg:px-10">
 
-          <Link href="/" className="flex items-center gap-3 no-underline">
+          <Link href="/" className="-my-1 flex min-h-[44px] items-center gap-3 py-1 no-underline">
             <Image src="/icon.png" alt="" width={32} height={32} className="rounded-md" priority />
             <span className="font-cinzel text-[13px] tracking-brand text-cream">
               GREEN <span className="text-gold">★</span> EMBLEM
@@ -87,8 +87,8 @@ export default function Nav() {
                     'relative font-cinzel text-[10px] tracking-wider2 no-underline transition-colors',
                     'after:absolute after:-bottom-1.5 after:left-0 after:h-px after:bg-gold after:transition-all after:duration-300',
                     isActive(href)
-                      ? 'text-gold after:w-full'
-                      : 'text-white/55 hover:text-white after:w-0 hover:after:w-full'
+                      ? 'text-white after:w-full'
+                      : 'text-white/70 hover:text-white after:w-0 hover:after:w-full'
                   )}
                 >
                   {label}
@@ -98,26 +98,26 @@ export default function Nav() {
             {user ? (
               <>
                 <li>
-                  <Link href="/dashboard" className="font-cinzel text-[10px] tracking-wider2 text-white/55 no-underline transition-colors hover:text-white">
+                  <Link href="/dashboard" className="font-cinzel text-[10px] tracking-wider2 text-white/70 no-underline transition-colors hover:text-white">
                     My Dashboard
                   </Link>
                 </li>
                 <li>
-                  <button onClick={signOut} className="cursor-pointer border-none bg-transparent p-0 font-cinzel text-[10px] tracking-wider2 text-white/55 transition-colors hover:text-white">
+                  <button onClick={signOut} className="cursor-pointer border-none bg-transparent p-0 font-cinzel text-[10px] tracking-wider2 text-white/70 transition-colors hover:text-white">
                     Sign out
                   </button>
                 </li>
               </>
             ) : (
               <li>
-                <Link href="/auth/sign-in" className="font-cinzel text-[10px] tracking-wider2 text-white/55 no-underline transition-colors hover:text-white">
+                <Link href="/auth/sign-in" className="font-cinzel text-[10px] tracking-wider2 text-white/70 no-underline transition-colors hover:text-white">
                   Sign in
                 </Link>
               </li>
             )}
             <li>
               <Button asChild variant="brand" size="sm">
-                <Link href="/sadaqah">Start Baab As-Sadaqah</Link>
+                <Link href="/explore">Explore</Link>
               </Button>
             </li>
           </ul>
@@ -127,7 +127,7 @@ export default function Nav() {
             onClick={() => setMenuOpen(v => !v)}
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
-            className="flex cursor-pointer items-center justify-center border-none bg-transparent p-1 text-gold lg:hidden"
+            className="-mr-2 flex h-11 w-11 cursor-pointer items-center justify-center border-none bg-transparent text-gold lg:hidden"
           >
             {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
@@ -137,7 +137,7 @@ export default function Nav() {
       {/* Mobile sheet */}
       <div
         className={cn(
-          'fixed inset-x-0 top-[68px] z-[99] origin-top border-b border-gold/15 bg-[#080f08]/95 backdrop-blur-xl transition-all duration-200 lg:hidden',
+          'fixed inset-x-0 top-[68px] z-[99] origin-top border-b border-gold/15 bg-forest-deepest/95 backdrop-blur-xl transition-all duration-200 lg:hidden',
           menuOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none -translate-y-2 opacity-0'
         )}
       >
@@ -148,7 +148,7 @@ export default function Nav() {
               href={href}
               className={cn(
                 'rounded-md px-3 py-3 font-cinzel text-[12px] tracking-wider2 no-underline transition-colors',
-                isActive(href) ? 'bg-gold/10 text-gold' : 'text-white/60 hover:bg-white/5 hover:text-white'
+                isActive(href) ? 'bg-gold/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
               )}
             >
               {label}
@@ -156,20 +156,20 @@ export default function Nav() {
           ))}
           {user ? (
             <>
-              <Link href="/dashboard" className="rounded-md px-3 py-3 font-cinzel text-[12px] tracking-wider2 text-white/60 no-underline transition-colors hover:bg-white/5 hover:text-white">
+              <Link href="/dashboard" className="rounded-md px-3 py-3 font-cinzel text-[12px] tracking-wider2 text-white/70 no-underline transition-colors hover:bg-white/5 hover:text-white">
                 My Dashboard
               </Link>
-              <button onClick={signOut} className="cursor-pointer rounded-md border-none bg-transparent px-3 py-3 text-left font-cinzel text-[12px] tracking-wider2 text-white/60 transition-colors hover:bg-white/5 hover:text-white">
+              <button onClick={signOut} className="cursor-pointer rounded-md border-none bg-transparent px-3 py-3 text-left font-cinzel text-[12px] tracking-wider2 text-white/70 transition-colors hover:bg-white/5 hover:text-white">
                 Sign out
               </button>
             </>
           ) : (
-            <Link href="/auth/sign-in" className="rounded-md px-3 py-3 font-cinzel text-[12px] tracking-wider2 text-gold no-underline transition-colors hover:bg-white/5">
+            <Link href="/auth/sign-in" className="rounded-md px-3 py-3 font-cinzel text-[12px] tracking-wider2 text-white no-underline transition-colors hover:bg-white/5">
               Sign in
             </Link>
           )}
           <Button asChild variant="brand" className="mt-2 w-full">
-            <Link href="/sadaqah">Start Baab As-Sadaqah</Link>
+            <Link href="/explore">Explore</Link>
           </Button>
         </div>
       </div>

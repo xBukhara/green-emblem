@@ -26,7 +26,7 @@ export default function BottomNav() {
       <nav
         aria-label="Primary"
         className={cn(
-          'fixed inset-x-0 bottom-0 z-[120] border-t border-gold/15 bg-[#080f08]/95 backdrop-blur-xl lg:hidden',
+          'fixed inset-x-0 bottom-0 z-[120] border-t border-gold/15 bg-forest-deepest/95 backdrop-blur-xl lg:hidden',
           'pb-[env(safe-area-inset-bottom,0px)]'
         )}
       >
@@ -44,13 +44,13 @@ export default function BottomNav() {
                   <span className="absolute top-0 h-0.5 w-6 rounded-full bg-gold" />
                 )}
                 <Icon
-                  className={cn('h-[22px] w-[22px] transition-colors', active ? 'text-gold' : 'text-white/45')}
+                  className={cn('h-[22px] w-[22px] transition-colors', active ? 'text-gold' : 'text-white/60')}
                   strokeWidth={active ? 2 : 1.6}
                 />
                 <span
                   className={cn(
                     'text-[9px] font-semibold tracking-wide transition-colors',
-                    active ? 'text-gold' : 'text-white/40'
+                    active ? 'text-white' : 'text-white/60'
                   )}
                 >
                   {label}

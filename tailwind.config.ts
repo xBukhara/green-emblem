@@ -29,8 +29,10 @@ const config: Config = {
       colors: {
         // ── Brand ──
         forest: {
-          DEFAULT: '#1a3d1a',
-          dark:    '#0f1f0f',
+          DEFAULT: '#1b3f1b',   // card / raised surface
+          dark:    '#143314',   // page background (lighter than the old #0f1f0f)
+          deepest: '#0e250e',   // nav, footer, deepest chrome
+          raised:  '#234c23',   // hover / elevated
           mid:     '#2e6b2e',
           light:   '#5a9e5a',
         },
