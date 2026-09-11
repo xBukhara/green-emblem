@@ -1,6 +1,8 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Cinzel, Cormorant_Garamond, Noto_Naskh_Arabic, Inter, Amiri_Quran } from 'next/font/google'
 import BottomNav from '@/components/BottomNav'
+import PWARegister from '@/components/PWARegister'
+import InstallPrompt from '@/components/InstallPrompt'
 import './globals.css'
 
 const cinzel = Cinzel({
@@ -44,6 +46,13 @@ const inter = Inter({
   display: 'swap',
 })
 
+export const viewport: Viewport = {
+  themeColor: '#143314',
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',   // lets content sit under the iOS home indicator
+}
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://green-emblem.com'),
   title: {
@@ -61,9 +70,21 @@ export const metadata: Metadata = {
     type: 'website',
     images: ['/og-image.png'],
   },
+  manifest: '/manifest.json',
+  applicationName: 'Green Emblem',
+  appleWebApp: {
+    capable: true,
+    title: 'Green Emblem',
+    statusBarStyle: 'black-translucent',
+  },
+  formatDetection: { telephone: false },
   icons: {
-    icon: '/icon.png',
-    apple: '/apple-icon.png',
+    icon: [
+      { url: '/icon.png' },
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: '/icons/apple-touch-icon.png',
   },
 }
 
@@ -73,6 +94,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         <BottomNav/>
+        <PWARegister/>
+        <InstallPrompt/>
       </body>
     </html>
   )

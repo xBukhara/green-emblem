@@ -1,0 +1,40 @@
+{
+  "name": "Green Emblem — Faith, Community & Giving",
+  "short_name": "Green Emblem",
+  "description": "Prayer times and Qibla, the Quran in Uthmani script, your masjid's events, and a free way to turn any celebration into sadaqah.",
+  "id": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#143314",
+  "theme_color": "#143314",
+  "categories": ["lifestyle", "social", "education"],
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Prayer times",
+      "short_name": "Prayer",
+      "url": "/prayer?source=shortcut",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Read Quran",
+      "short_name": "Quran",
+      "url": "/prayer?tab=quran&source=shortcut",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Nearby & events",
+      "short_name": "GreenWorld+",
+      "url": "/greenworld-plus?source=shortcut",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

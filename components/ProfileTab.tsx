@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { MosqueAutocomplete, MosqueMapEmbed, type MosquePlace } from '@/components/MosqueMap'
+import NotificationSettings from '@/components/NotificationSettings'
 
 const card: React.CSSProperties = { background: 'rgba(15,31,15,0.55)', border: '0.5px solid rgba(212,175,110,0.12)', borderRadius: '14px', padding: '22px' }
 const sectionLabel: React.CSSProperties = { fontFamily: 'Georgia, serif', fontSize: '9px', letterSpacing: '0.2em', color: '#d4af6e', marginBottom: '16px' }
@@ -156,6 +157,9 @@ export default function ProfileTab({ user, profile, campaigns, supabase, onProfi
           </>
         )}
       </div>
+
+      {/* ── NOTIFICATIONS ── */}
+      <NotificationSettings />
 
       {/* ── COMMUNITY ANNOUNCEMENTS ── */}
       <div style={card}>

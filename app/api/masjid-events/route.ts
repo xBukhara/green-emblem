@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { sendNewEventNotification } from '@/lib/email'
+import { sendToSubscriptions, getSubscriptionsForUsers } from '@/lib/push-server'
 
 // GET /api/masjid-events — public, list active (non-expired) events.
 // Optional ?masjid_id= to filter to one masjid.
@@ -54,6 +55,31 @@ export async function POST(request: NextRequest) {
   const { data: followers } = await admin.from('profiles').select('email, first_name').eq('followed_masjid_id', masjid_id)
 
   if (masjid && followers?.length) {
+    // Push to followers' devices. Best-effort and non-blocking — a push
+    // failure must never stop the event from being created.
+    ;(async () => {
+      try {
+        const { data: followerRows } = await admin
+          .from('profiles').select('id').eq('followed_masjid_id', masjid_id)
+        const ids = (followerRows || []).map((r: any) => r.id)
+        const subs = await getSubscriptionsForUsers(ids, 'notify_masjid_events')
+        if (subs.length) {
+          const when = new Date(event_start).toLocaleDateString('en-US', {
+            weekday: 'short', month: 'short', day: 'numeric',
+          })
+          await sendToSubscriptions(subs, {
+            title: masjid.name,
+            body: `${title} · ${when}`,
+            url: '/greenworld-plus',
+            tag: `ge-event-${event.id}`,
+            renotify: true,
+          })
+        }
+      } catch (e) {
+        console.warn('[push] masjid event notification failed', e)
+      }
+    })()
+
     Promise.allSettled(
       followers.map(f => sendNewEventNotification({
         email: f.email,
