@@ -7,86 +7,22 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 // Places API enabled in Google Cloud Console.
 let mapsLoadPromise: Promise<void> | null = null
 
-// The libraries this file actually uses: 'core' carries SymbolPath and
-// LatLngBounds, 'maps' the Map/Marker/Circle/InfoWindow classes, 'places'
-// the search services, 'geometry' the spherical helpers.
-const MAPS_LIBRARIES = ['core', 'maps', 'places', 'geometry'] as const
-
-// The API surface this file touches. Anything less than this is "not loaded".
-function mapsReady(): boolean {
-  const g = (window as any).google
-  return !!(g?.maps?.Map && g?.maps?.places?.PlacesService)
-}
-
 function loadGoogleMaps(): Promise<void> {
   if (typeof window === 'undefined') return Promise.resolve()
-  if (mapsReady()) return Promise.resolve()
+  if ((window as any).google?.maps?.places) return Promise.resolve()
   if (mapsLoadPromise) return mapsLoadPromise
 
-  const promise = new Promise<void>((resolve, reject) => {
+  mapsLoadPromise = new Promise((resolve, reject) => {
     const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
     if (!key) { reject(new Error('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not set')); return }
-
-    // ── Why this is not just `onload: resolve` ──────────────────────────
-    // The script is requested with `loading=async`, which means onload
-    // fires as soon as the small BOOTSTRAP loader arrives — at that moment
-    // google.maps.Map and google.maps.places do not exist yet. Resolving
-    // there and calling `new google.maps.Map(...)` throws, the caller's
-    // .catch() shows "couldn't load the map", and it never retries.
-    //
-    // That was the GreenWorld+ bug: the map only appeared after visiting a
-    // page that had already triggered a load (Dashboard → Profile mounts
-    // the mosque autocomplete), because by the time you navigated back the
-    // libraries had finished bootstrapping in the background and the
-    // early-return above caught it.
-    //
-    // importLibrary is the documented way to wait for the real API, and it
-    // populates the google.maps namespace the rest of this file uses.
-    const whenReady = () => {
-      const g = (window as any).google
-      const libs = g?.maps?.importLibrary
-        ? Promise.all(MAPS_LIBRARIES.map(l => g.maps.importLibrary(l)))
-        : Promise.resolve([])   // legacy loader: everything is there already
-      libs
-        .then(() => {
-          if (!mapsReady()) throw new Error('Google Maps loaded but its API never became available')
-          resolve()
-        })
-        .catch(reject)
-    }
-
-    const fail = (err: Error) => {
-      // Drop the tag so a retry starts from a clean slate.
-      document.querySelectorAll('script[data-google-maps]').forEach(s => s.remove())
-      reject(err)
-    }
-
-    const existing = document.querySelector<HTMLScriptElement>('script[data-google-maps]')
-    if (existing) {
-      existing.addEventListener('load', whenReady)
-      existing.addEventListener('error', () => fail(new Error('Failed to load Google Maps')))
-      if ((window as any).google?.maps) whenReady()
-      return
-    }
-
     const script = document.createElement('script')
-    script.src =
-      `https://maps.googleapis.com/maps/api/js?key=${key}` +
-      `&libraries=${MAPS_LIBRARIES.join(',')}&loading=async&v=weekly`
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places,geometry&loading=async`
     script.async = true
-    script.dataset.googleMaps = 'true'
-    script.onload = whenReady
-    script.onerror = () => fail(new Error('Failed to load Google Maps'))
+    script.onload = () => resolve()
+    script.onerror = () => reject(new Error('Failed to load Google Maps'))
     document.head.appendChild(script)
   })
-
-  mapsLoadPromise = promise
-  // Never cache a failure. A rejected promise kept here would disable every
-  // map for the rest of the session, turning one flaky request into a dead
-  // feature until a full page reload.
-  promise.catch(() => { if (mapsLoadPromise === promise) mapsLoadPromise = null })
-
-  return promise
+  return mapsLoadPromise
 }
 
 // ── Green Emblem map style ───────────────────────────────────────────────
@@ -316,7 +252,6 @@ export function ExploreNearbyMap({
   const [locStatus, setLocStatus] = useState<'idle' | 'locating' | 'granted' | 'denied'>('idle')
   const [mapReady, setMapReady] = useState(false)
   const [failed, setFailed] = useState(false)
-  const [reloadKey, setReloadKey] = useState(0)
   const [radiusMi, setRadiusMi] = useState<number>(() => {
     if (initialRadiusMi) return Math.min(RADIUS_MAX, Math.max(RADIUS_MIN, initialRadiusMi))
     return 10
@@ -327,30 +262,13 @@ export function ExploreNearbyMap({
 
   const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
-  // ── Restoring the radius ────────────────────────────────────────────────
-  // The profile arrives AFTER mount (the page fetches it), so the lazy
-  // useState initialiser above can never see it. Previously this effect
-  // bailed out the moment initialRadiusMi appeared, which meant a saved
-  // travel radius was silently ignored and everyone got 10 miles.
-  const userTouchedRadius = useRef(false)
-  const profileRadiusApplied = useRef(false)
-  const clampMi = (n: number) => Math.min(RADIUS_MAX, Math.max(RADIUS_MIN, n || 10))
-
-  // Local cache first, so there's something sensible before the profile lands.
+  // Restore radius: saved profile value wins, then local cache
   useEffect(() => {
-    if (initialRadiusMi || userTouchedRadius.current) return
+    if (initialRadiusMi) return
     try {
       const cached = localStorage.getItem(RADIUS_KEY)
-      if (cached) setRadiusMi(clampMi(Number(cached)))
+      if (cached) setRadiusMi(Math.min(RADIUS_MAX, Math.max(RADIUS_MIN, Number(cached) || 10)))
     } catch {}
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // The saved profile value wins when it arrives — unless they've already
-  // moved the slider themselves, in which case leave their choice alone.
-  useEffect(() => {
-    if (!initialRadiusMi || profileRadiusApplied.current || userTouchedRadius.current) return
-    profileRadiusApplied.current = true
-    setRadiusMi(clampMi(initialRadiusMi))
   }, [initialRadiusMi])
 
   // Locate the user — reuse the Prayer page's cached location first
@@ -384,10 +302,8 @@ export function ExploreNearbyMap({
   useEffect(() => {
     if (!key || !center || gmap.current) return
     let cancelled = false
-    setFailed(false)
     loadGoogleMaps().then(() => {
-      if (cancelled) return
-      if (!mapRef.current) { setFailed(true); return }   // never sit blank in silence
+      if (cancelled || !mapRef.current) return
       const g = (window as any).google
       gmap.current = new g.maps.Map(mapRef.current, {
         center, zoom: 11, styles: GE_MAP_STYLE, backgroundColor: '#0f1f0f',
@@ -405,9 +321,9 @@ export function ExploreNearbyMap({
       })
       gmap.current.fitBounds(circleRef.current.getBounds(), 24)
       setMapReady(true)
-    }).catch(() => { if (!cancelled) setFailed(true) })
+    }).catch(() => setFailed(true))
     return () => { cancelled = true }
-  }, [key, center, reloadKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [key, center]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep the boundary circle in sync with the slider
   useEffect(() => {
@@ -512,7 +428,7 @@ export function ExploreNearbyMap({
           </div>
           <input
             type="range" min={RADIUS_MIN} max={RADIUS_MAX} step={1} value={radiusMi}
-            onChange={e => { userTouchedRadius.current = true; setRadiusMi(Number(e.target.value)) }}
+            onChange={e => setRadiusMi(Number(e.target.value))}
             aria-label="Travel radius in miles"
             className="ge-radius-slider"
             style={{ width: '100%' }}
@@ -555,14 +471,8 @@ export function ExploreNearbyMap({
           </div>
         )}
         {failed && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '20px', textAlign: 'center', background: 'rgba(15,31,15,0.85)' }}>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15,31,15,0.85)' }}>
             <span style={{ fontFamily: 'var(--font-cormorant, Georgia, serif)', fontSize: '13px', color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>Couldn&apos;t load the map right now.</span>
-            <button
-              onClick={() => { gmap.current = null; setMapReady(false); setFailed(false); setReloadKey(k => k + 1) }}
-              style={{ fontFamily: 'var(--font-inter, Georgia, serif)', fontSize: '11px', fontWeight: 600, color: '#0f1f0f', background: '#d4af6e', border: 'none', borderRadius: '9px', padding: '9px 20px', cursor: 'pointer' }}
-            >
-              Try again
-            </button>
           </div>
         )}
         {center && <MapVignette/>}

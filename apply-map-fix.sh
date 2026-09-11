@@ -1,3 +1,30 @@
+#!/usr/bin/env bash
+# ════════════════════════════════════════════════════════════════════════
+#  GREEN EMBLEM — FIX: GreenWorld+ map not loading on first visit
+#
+#  The Maps script is requested with `loading=async`, so its onload fires
+#  before google.maps.Map / google.maps.places exist. The old code resolved
+#  on onload and immediately built the map, which threw. That is why the map
+#  only appeared after visiting Dashboard → Profile first: that page also
+#  triggers a load, and by the time you navigated back the libraries had
+#  finished bootstrapping.
+#
+#  Run from the root of your green-emblem project:
+#      bash apply-map-fix.sh
+# ════════════════════════════════════════════════════════════════════════
+set -euo pipefail
+
+if [ ! -f package.json ] || [ ! -d app ]; then
+  echo "✗ Run this from the root of the green-emblem project."
+  exit 1
+fi
+
+BACKUP=".portal-backup/$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$BACKUP/components" "components"
+if [ -f components/MosqueMap.tsx ]; then cp components/MosqueMap.tsx "$BACKUP/components/MosqueMap.tsx"; fi
+echo "→ Backed up the old file to $BACKUP"
+
+cat > components/MosqueMap.tsx <<'GE_EOF_A0A90F93'
 'use client'
 import { useEffect, useRef, useState, useCallback } from 'react'
 
@@ -607,3 +634,25 @@ export function ExploreNearbyMap({
     </div>
   )
 }
+GE_EOF_A0A90F93
+
+echo
+FAIL=0
+for s in "importLibrary" "mapsReady" "Try again" "userTouchedRadius"; do
+  if grep -qF -- "$s" components/MosqueMap.tsx; then echo "  ✓ $s"; else echo "  ✗ MISSING: $s"; FAIL=1; fi
+done
+
+if [ "$FAIL" -ne 0 ]; then
+  echo "✗ File did not apply cleanly. Do not commit. Re-run the script."
+  exit 1
+fi
+
+echo
+echo "════════════════════════════════════════════════════════════════"
+echo " MAP FIX APPLIED"
+echo "════════════════════════════════════════════════════════════════"
+echo
+echo "  git add -A"
+echo "  git commit -m 'fix: wait for Google Maps libraries before building the map'"
+echo "  git push"
+echo
