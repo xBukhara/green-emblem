@@ -1,10 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { usePathname } from 'next/navigation'
 import { Download, X, Share } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { isIos, isStandalone } from '@/lib/push-client'
-import { isConsumerSurface } from '@/lib/surface'
 
 const DISMISS_KEY = 'ge_install_dismissed_at'
 const DISMISS_DAYS = 30
@@ -13,18 +11,11 @@ const DISMISS_DAYS = 30
 // has actually used the site (30s), and stays gone for a month once
 // dismissed — an install banner that nags is worse than none.
 export default function InstallPrompt() {
-  const pathname = usePathname()
-  const [host, setHost] = useState<string | null>(null)
-  useEffect(() => { setHost(window.location.hostname) }, [])
-  const consumer = isConsumerSurface(pathname, host)
   const [deferred, setDeferred] = useState<any>(null)
   const [show, setShow] = useState(false)
   const [iosHint, setIosHint] = useState(false)
 
   useEffect(() => {
-    // The admin console and the masjid portal are staff surfaces — nobody
-    // there should be asked to install the consumer app.
-    if (!consumer) return
     if (isStandalone()) return
     try {
       const at = Number(localStorage.getItem(DISMISS_KEY) || 0)
@@ -46,7 +37,7 @@ export default function InstallPrompt() {
       return () => { clearTimeout(t); window.removeEventListener('beforeinstallprompt', onPrompt) }
     }
     return () => window.removeEventListener('beforeinstallprompt', onPrompt)
-  }, [consumer])
+  }, [])
 
   const dismiss = () => {
     setShow(false)
@@ -61,13 +52,12 @@ export default function InstallPrompt() {
     dismiss()
   }
 
-  if (!consumer || !show) return null
+  if (!show) return null
 
   return (
     <div
       role="dialog"
       aria-label="Install Green Emblem"
-      data-consumer-chrome=""
       className="fixed inset-x-3 bottom-[calc(74px+env(safe-area-inset-bottom,0px))] z-[130] rounded-xl border border-gold/25 bg-forest-deepest/97 p-4 shadow-2xl backdrop-blur-xl lg:inset-x-auto lg:right-6 lg:bottom-6 lg:max-w-[360px]"
     >
       <button

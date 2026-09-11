@@ -1,19 +1,10 @@
 'use client'
 import { useEffect } from 'react'
-import { usePathname } from 'next/navigation'
-import { isConsumerSurface } from '@/lib/surface'
 
 // Registers the service worker once, on every page. Silent by design —
 // a failed registration should never surface to the user.
-//
-// Not on the portal: it is served from its own hostname, so registering
-// there would create a second, separate service worker that handles no
-// push and caches staff pages nobody wants cached.
 export default function PWARegister() {
-  const pathname = usePathname()
   useEffect(() => {
-    // Runs in the browser only, so window.location is the reliable check.
-    if (!isConsumerSurface(pathname, window.location.hostname)) return
     if (!('serviceWorker' in navigator)) return
     if (process.env.NODE_ENV === 'development') return   // avoid stale SW during dev
 
@@ -23,7 +14,7 @@ export default function PWARegister() {
     // Wait for load so the SW never competes with first paint for bandwidth
     if (document.readyState === 'complete') register()
     else window.addEventListener('load', register, { once: true })
-  }, [pathname])
+  }, [])
 
   return null
 }

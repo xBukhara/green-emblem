@@ -1,15 +1,11 @@
 'use client'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Home, Compass, HeartHandshake, LayoutGrid, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { isConsumerSurface } from '@/lib/surface'
 
 // ── Mobile bottom tab bar ────────────────────────────────────────────────
-// Pocket-check features one thumb-tap away. Hidden on desktop, and on the
-// admin console and masjid portal — those are their own surfaces and this
-// bar would sit over their content.
+// Pocket-check features one thumb-tap away. Hidden on desktop and admin.
 const TABS = [
   { href: '/',          label: 'Home',    Icon: Home },
   { href: '/prayer',    label: 'Prayer',  Icon: Compass },
@@ -20,14 +16,7 @@ const TABS = [
 
 export default function BottomNav() {
   const pathname = usePathname()
-
-  // The hostname is only knowable in the browser, so this starts as the
-  // server's answer and corrects itself on mount. On the portal the CSS in
-  // its layout has already hidden the bar, so nothing flashes in between.
-  const [host, setHost] = useState<string | null>(null)
-  useEffect(() => { setHost(window.location.hostname) }, [])
-
-  if (!isConsumerSurface(pathname, host)) return null
+  if (pathname?.startsWith('/admin')) return null
 
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname?.startsWith(href)

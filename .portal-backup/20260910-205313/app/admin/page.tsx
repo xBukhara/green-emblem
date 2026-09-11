@@ -29,10 +29,6 @@ export default function AdminPage() {
   const [masjidPlace, setMasjidPlace] = useState<MosquePlace | null>(null)
   const [masjidForm, setMasjidForm] = useState({ name:'', instagram_handle:'', facebook_page:'', phone:'', website:'', verified:true, auto_sync_enabled:false })
   const [masjidSaving, setMasjidSaving] = useState(false)
-  const [inviteFor, setInviteFor] = useState<any>(null)      // masjid being invited
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteBusy, setInviteBusy] = useState(false)
-  const [inviteResult, setInviteResult] = useState<{link?:string;emailed?:boolean;error?:string}|null>(null)
   const [eventModal, setEventModal] = useState<string | null>(null) // masjid_id
   const [eventForm, setEventForm] = useState({ title:'', description:'', event_start:'', event_end:'' })
   const [eventSaving, setEventSaving] = useState(false)
@@ -144,20 +140,6 @@ export default function AdminPage() {
     setMasjidModal(false)
     setMasjidForm({ name:'', instagram_handle:'', facebook_page:'', phone:'', website:'', verified:true, auto_sync_enabled:false })
     setMasjidPlace(null)
-  }
-
-  const sendPortalInvite = async () => {
-    if (!inviteFor || !inviteEmail) return
-    setInviteBusy(true); setInviteResult(null)
-    const { data: { session } } = await supabase.auth.getSession()
-    const res = await fetch('/api/portal/invite', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
-      body: JSON.stringify({ masjid_id: inviteFor.id, email: inviteEmail }),
-    })
-    const j = await res.json().catch(() => ({}))
-    setInviteBusy(false)
-    setInviteResult(res.ok ? { link: j.link, emailed: j.emailed } : { error: j.error || 'Could not send the invitation.' })
   }
 
   const deleteMasjid = async (id: string) => {
@@ -574,7 +556,6 @@ export default function AdminPage() {
                     </div>
                     <div style={{display:'flex',gap:'6px',flexWrap:'wrap',justifyContent:'flex-end'}}>
                       {m.auto_sync_enabled && <button style={c.btn()} onClick={() => syncMasjidNow(m.id)} disabled={syncingMasjid === m.id}>{syncingMasjid === m.id ? 'Syncing…' : 'Sync now'}</button>}
-                      <button style={c.btn()} onClick={() => { setInviteFor(m); setInviteEmail(''); setInviteResult(null) }}>Invite to portal</button>
                       <button style={c.btn('gold')} onClick={() => setEventModal(m.id)}>+ Event</button>
                       <button style={c.btn('red')} onClick={() => deleteMasjid(m.id)}>Remove</button>
                     </div>
@@ -692,49 +673,6 @@ export default function AdminPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          </div>
-        )}
-
-        {/* ── PORTAL INVITE MODAL ── */}
-        {inviteFor && (
-          <div style={{position:'fixed',inset:0,zIndex:300,background:'rgba(4,10,4,0.8)',display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}} onClick={() => !inviteBusy && setInviteFor(null)}>
-            <div style={{...c.card,width:'100%',maxWidth:'480px',background:'#0d1f0d'}} onClick={e => e.stopPropagation()}>
-              <div style={{fontFamily:'Georgia,serif',fontSize:'9px',letterSpacing:'0.2em',color:'#d4af6e',marginBottom:'6px'}}>MASJID PORTAL</div>
-              <div style={{fontFamily:'Georgia,serif',fontSize:'17px',color:'#fff',marginBottom:'4px'}}>Invite {inviteFor.name}</div>
-              <p style={{fontFamily:'Georgia,serif',fontSize:'13px',color:'rgba(255,255,255,0.45)',lineHeight:1.65,marginBottom:'18px'}}>
-                They&apos;ll get a one-time link to set their own password. You never see or set it. The link expires in 7 days.
-              </p>
-
-              <label style={{fontFamily:'Georgia,serif',fontSize:'10px',letterSpacing:'0.1em',color:'rgba(255,255,255,0.4)',display:'block',marginBottom:'6px'}}>IMAM / ADMIN EMAIL</label>
-              <input
-                type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
-                placeholder="imam@masjid.org"
-                style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'0.5px solid rgba(212,175,110,0.25)',borderRadius:'9px',padding:'11px 13px',fontFamily:'Georgia,serif',fontSize:'14px',color:'#fff',outline:'none',marginBottom:'16px'}}
-              />
-
-              {inviteResult?.error && (
-                <p style={{fontFamily:'Georgia,serif',fontSize:'13px',color:'#e87573',marginBottom:'14px'}}>{inviteResult.error}</p>
-              )}
-              {inviteResult?.link && (
-                <div style={{background:'rgba(46,107,46,0.12)',border:'0.5px solid rgba(46,107,46,0.3)',borderRadius:'9px',padding:'12px 14px',marginBottom:'14px'}}>
-                  <div style={{fontFamily:'Georgia,serif',fontSize:'12px',color:'#5a9e5a',marginBottom:'6px'}}>
-                    {inviteResult.emailed ? 'Invitation emailed.' : 'Invitation created — email could not be sent, so share this link yourself:'}
-                  </div>
-                  <div style={{fontFamily:'monospace',fontSize:'11px',color:'rgba(255,255,255,0.65)',wordBreak:'break-all'}}>{inviteResult.link}</div>
-                </div>
-              )}
-
-              <div style={{display:'flex',gap:'8px'}}>
-                <button onClick={() => setInviteFor(null)} disabled={inviteBusy} style={{...c.btn(),flex:1}}>
-                  {inviteResult?.link ? 'Done' : 'Cancel'}
-                </button>
-                {!inviteResult?.link && (
-                  <button onClick={sendPortalInvite} disabled={inviteBusy || !inviteEmail} style={{...c.btn('gold'),flex:2}}>
-                    {inviteBusy ? 'Sending…' : 'Send invitation'}
-                  </button>
-                )}
-              </div>
             </div>
           </div>
         )}

@@ -4,7 +4,6 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import { createClient } from '@/lib/supabase/client'
 import { ExploreNearbyMap } from '@/components/MosqueMap'
-import RsvpButton from '@/components/RsvpButton'
 
 type Masjid = { id: string; name: string; city: string; state: string; verified: boolean }
 type EventRow = {
@@ -23,7 +22,6 @@ export default function GreenWorldPlusPage() {
   const [search, setSearch] = useState('')
   const [events, setEvents] = useState<EventRow[]>([])
   const [loadingEvents, setLoadingEvents] = useState(true)
-  const [posts, setPosts] = useState<any[]>([])
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -36,15 +34,6 @@ export default function GreenWorldPlusPage() {
       setChecked(true)
     })
     fetch('/api/masjid-events').then(r => r.json()).then(d => { setEvents(d.events || []); setLoadingEvents(false) }).catch(() => setLoadingEvents(false))
-
-    // Posts published from the masjid portal
-    supabase
-      .from('masjid_posts')
-      .select('*, masjids(name, city, state)')
-      .eq('status', 'published')
-      .order('starts_at', { ascending: true, nullsFirst: false })
-      .limit(30)
-      .then(({ data }: any) => setPosts(data || []))
 
   }, [])
 
@@ -154,51 +143,6 @@ export default function GreenWorldPlusPage() {
             onRadiusSave={saveTravelRadius}
           />
         </div>
-
-        {/* From the masjids themselves */}
-        {posts.length > 0 && (
-          <div style={{ marginBottom: '32px' }}>
-            <div style={{ fontFamily: 'Georgia, serif', fontSize: '9px', letterSpacing: '0.2em', color: '#d4af6e', marginBottom: '14px' }}>
-              FROM YOUR MASJIDS
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {posts.map(p => (
-                <div key={p.id} id={`post-${p.id}`} style={{ background: 'rgba(27,63,27,0.6)', border: '0.5px solid rgba(212,175,110,0.14)', borderRadius: '14px', padding: '18px 20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '6px' }}>
-                    <div style={{ fontFamily: 'var(--font-cinzel)', fontSize: '16px', color: '#fff' }}>{p.title}</div>
-                    <div style={{ fontFamily: 'Georgia, serif', fontSize: '10px', letterSpacing: '0.1em', color: '#d4af6e', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
-                      {p.type === 'youth' ? 'Youth' : p.type}
-                    </div>
-                  </div>
-                  <div style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: 'rgba(255,255,255,0.45)', marginBottom: '8px' }}>
-                    {p.masjids?.name}
-                    {p.starts_at && ` · ${new Date(p.starts_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · ${new Date(p.starts_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`}
-                    {p.type === 'program' && p.schedule_text && ` · ${p.schedule_text}`}
-                  </div>
-                  {p.body && (
-                    <p style={{ fontFamily: 'var(--font-cormorant)', fontSize: '15px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, marginBottom: '12px' }}>{p.body}</p>
-                  )}
-                  {p.type === 'fundraiser' && p.goal_amount && (
-                    <div style={{ marginBottom: '12px' }}>
-                      <div style={{ height: '6px', borderRadius: '99px', background: 'rgba(255,255,255,0.08)', overflow: 'hidden', marginBottom: '6px' }}>
-                        <div style={{ height: '100%', width: `${Math.min(100, (Number(p.raised_amount || 0) / Number(p.goal_amount)) * 100)}%`, background: '#d4af6e' }}/>
-                      </div>
-                      <div style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
-                        ${Number(p.raised_amount || 0).toLocaleString()} raised of ${Number(p.goal_amount).toLocaleString()}
-                      </div>
-                    </div>
-                  )}
-                  {p.type === 'fundraiser' && p.donate_url && (
-                    <a href={p.donate_url} target="_blank" rel="noreferrer" style={{ display: 'inline-block', fontFamily: 'var(--font-cinzel)', fontSize: '10px', letterSpacing: '0.16em', color: '#143314', background: '#d4af6e', padding: '9px 18px', borderRadius: '8px', textDecoration: 'none' }}>
-                      Donate
-                    </a>
-                  )}
-                  {p.rsvp_enabled && <RsvpButton postId={p.id} size="sm" />}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Events feed */}
         <div style={{ fontFamily: 'Georgia, serif', fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.4)', marginBottom: '14px' }}>
