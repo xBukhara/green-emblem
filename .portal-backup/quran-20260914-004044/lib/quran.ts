@@ -195,8 +195,7 @@ export async function fetchTafsir(surah: number, ayah: number): Promise<{ text: 
   }
 }
 
-// The end-of-ayah marker used to be composed here, in JavaScript, from the
-// verse number. It is deliberately gone: `text_qpc_hafs` already carries the
-// mushaf's own marker, and no part of the Arabic line should be assembled by
-// this app. If you find yourself needing this function again, that is a sign
-// something is rendering the wrong text field.
+// Arabic-Indic numerals for the end-of-ayah marker (١٢٣…)
+export function toArabicNumber(n: number): string {
+  return String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)])
+}

@@ -15,10 +15,7 @@
 // expect, throw — the UI shows an honest error rather than rendering text
 // we are not certain about.
 
-// Overridable ONLY so the reader can be pointed at a fixture server during
-// verification. Leave it unset everywhere else — in production this must be
-// the real upstream, and nothing in the app sets it.
-const API = process.env.QURAN_API_BASE || 'https://api.quran.com/api/v4'
+const API = 'https://api.quran.com/api/v4'
 
 // Quran text is immutable — cache hard.
 const IMMUTABLE = { next: { revalidate: 60 * 60 * 24 * 30 } }   // 30 days
@@ -157,24 +154,6 @@ function plainText(html: string): string {
 
 const PER_PAGE = 50
 
-// ── Which text field, and why it matters ─────────────────────────────────
-// `text_qpc_hafs` is the King Fahd Complex's own digitisation of the Madinah
-// mushaf, and it is the text the official UthmanicHafs font is cut for. The
-// other candidate, `text_uthmani`, carries the same words but in modern typed
-// forms: a round sukun (U+0652) where the mushaf uses the small dotless head
-// of khah (U+06E1), a tatweel (U+0640) padded in before every superscript
-// alef, and ordinary tanwin where the mushaf uses the inverted damma.
-// Rendered, that reads as keyboard Arabic rather than a mushaf page.
-//
-// Do not "simplify" this back to text_uthmani, and do not mix the two —
-// the font and the text are a matched pair.
-//
-// Note: text_qpc_hafs ends each verse with its Arabic-Indic ayah number, the
-// way the printed page does. That marker is part of the supplied text and is
-// rendered as-is; the UI must not add a second verse number to the Arabic
-// line, and must not strip this one.
-const QURAN_TEXT_FIELD = 'text_qpc_hafs' as const
-
 export async function getSurah(id: number, translationId: number): Promise<SurahPayload> {
   if (!Number.isInteger(id) || id < 1 || id > 114) throw new Error('Invalid surah number')
 
@@ -189,21 +168,20 @@ export async function getSurah(id: number, translationId: number): Promise<Surah
   let totalPages = 1
   do {
     const data = await get(
-      `/verses/by_chapter/${id}?fields=${QURAN_TEXT_FIELD}&translations=${translationId}` +
+      `/verses/by_chapter/${id}?fields=text_uthmani&translations=${translationId}` +
       `&per_page=${PER_PAGE}&page=${page}`,
       IMMUTABLE
     )
     const batch = data?.verses
     if (!Array.isArray(batch)) throw new Error('Unexpected verses payload')
     for (const v of batch) {
-      const text = v[QURAN_TEXT_FIELD]
-      if (typeof text !== 'string' || !text.trim()) {
-        throw new Error(`Missing ${QURAN_TEXT_FIELD} for ${v.verse_key}`)
+      if (typeof v.text_uthmani !== 'string' || !v.text_uthmani.trim()) {
+        throw new Error(`Missing Uthmani text for ${v.verse_key}`)
       }
       verses.push({
         number: v.verse_number,
         key: v.verse_key,
-        uthmani: text,
+        uthmani: v.text_uthmani,
         translation: plainText(v.translations?.[0]?.text || ''),
       })
     }
@@ -215,33 +193,16 @@ export async function getSurah(id: number, translationId: number): Promise<Surah
     throw new Error(`Verse count mismatch for surah ${id}: got ${verses.length}, expected ${chapter.verses_count}`)
   }
 
-  // ── The bismillah header ───────────────────────────────────────────────
-  // Taken from verse 1:1 of Al-Fatihah in this same edition — never typed by
-  // hand here. Because the verse text now ends with its ayah marker (١), we
-  // take it WORD BY WORD instead of trimming the string: the API marks the
-  // marker as its own word with char_type_name 'end', so selecting the
-  // 'word' entries gives the bismillah with nothing edited or removed.
-  //
-  // On Al-Fatihah there is no header at all — there the bismillah IS ayah 1
-  // in the Hafs numbering the printed mushaf uses (which is why the API
-  // reports bismillah_pre: false and verses_count: 7 for surah 1).
+  // The bismillah shown above a surah is taken verbatim from verse 1:1 of
+  // Al-Fatihah in the same Uthmani edition — never typed by hand here.
   let bismillah = ''
-  if (chapter.bismillah_pre && id !== 1) {
-    const fatiha = await get(
-      `/verses/by_chapter/1?words=true&word_fields=${QURAN_TEXT_FIELD}&per_page=1&page=1`,
-      IMMUTABLE
-    )
-    const words = fatiha?.verses?.[0]?.words
-    if (!Array.isArray(words)) throw new Error('Unexpected words payload for 1:1')
-    const parts = words
-      .filter((w: any) => w?.char_type_name === 'word')
-      .map((w: any) => w?.[QURAN_TEXT_FIELD])
-    if (parts.length !== 4 || parts.some((p: any) => typeof p !== 'string' || !p.trim())) {
-      // Four words: بسم / الله / الرحمن / الرحيم. Anything else means the
-      // upstream shape changed and we must not guess at it.
-      throw new Error(`Unexpected bismillah word structure for 1:1 (got ${parts.length} words)`)
+  if (chapter.bismillah_pre) {
+    if (id === 1) {
+      bismillah = ''
+    } else {
+      const fatiha = await get(`/verses/by_chapter/1?fields=text_uthmani&per_page=1&page=1`, IMMUTABLE)
+      bismillah = fatiha?.verses?.[0]?.text_uthmani || ''
     }
-    bismillah = parts.join(' ')
   }
 
   return {

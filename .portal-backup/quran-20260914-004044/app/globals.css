@@ -76,25 +76,16 @@ html { scroll-behavior: smooth; }
 }
 
 /* ── QURANIC SCRIPT ────────────────────────────────────────────────────
-   The official King Fahd Glorious Quran Printing Complex face, cut for the
-   `text_qpc_hafs` text the reader now uses. The two are a matched pair: this
-   font positions the mushaf marks (the dotless-head-of-khah sukun, the
-   inverted-damma tanwin, superscript alef, the waqf signs) correctly, which
-   a general-purpose Arabic face does not.
-
-   Loaded from the Quran Foundation's CDN first, because they periodically
-   ship corrections to the font and we want those. The self-hosted copy is
-   the fallback so the reader still renders offline (the service worker
-   caches whichever one wins) and if their CDN is ever unreachable.
-
-   To populate the local fallback: bash scripts/fetch-quran-font.sh
-   Do NOT delete the Amiri Quran tail of the stack — it is the last resort
-   if both fail, and it renders the marks legibly even if not like a mushaf. */
+   Optional upgrade: drop the official KFGQPC Uthmanic Script HAFS font
+   into /public/fonts/ and it is used automatically. Until then the stack
+   falls through to Amiri Quran (loaded via next/font in app/layout.tsx),
+   which is purpose-built for Quranic text and renders every Uthmani
+   diacritic correctly — so the reader is never left with a face that
+   mangles the marks. */
 @font-face {
   font-family: 'KFGQPC Uthmanic Script HAFS';
-  src: url('https://verses.quran.foundation/fonts/quran/hafs/uthmanic_hafs/UthmanicHafs1Ver18.woff2') format('woff2'),
-       url('/fonts/UthmanicHafs1Ver18.woff2') format('woff2'),
-       url('/fonts/UthmanicHafs.ttf') format('truetype');
+  src: url('/fonts/UthmanicHafs.woff2') format('woff2'),
+       url('/fonts/UthmanicHafs.ttf')  format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;

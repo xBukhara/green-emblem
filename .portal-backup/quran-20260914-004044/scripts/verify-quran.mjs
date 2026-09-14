@@ -11,16 +11,8 @@
 
 const BASE = (process.argv[2] || 'https://green-emblem.com').replace(/\/$/, '')
 
-// Detecting the bismillah by matching a fully-vowelled string is brittle: it
-// broke the moment the reader moved from `text_uthmani` to `text_qpc_hafs`,
-// because the mushaf spells the sukun with U+06E1 (ۡ) rather than the modern
-// U+0652 (ْ). So strip every combining mark first and compare letters only.
-// This is for verification, never for display — nothing here feeds the UI.
-const MARKS = /[\u0640\u064B-\u065F\u0670\u06D6-\u06ED]/gu
-// Fold alef variants onto plain alef, or "\u0671\u0644\u0644\u0647" will not match "\u0627\u0644\u0644\u0647".
-const stripMarks = s => (s || '').replace(MARKS, '').replace(/[\u0622\u0623\u0625\u0671]/gu, '\u0627')
-const startsWithBismillah = s =>
-  stripMarks(s).replace(/\s+/g, ' ').trim().startsWith('بسم الله')
+// "بسم الله" prefix in Uthmani script, normalised of diacritics for matching
+const BISMILLAH_START = /^\s*بِسْمِ\s*ٱ?للَّه/u
 
 let pass = 0, fail = 0
 const check = (name, ok, extra = '') => {
@@ -44,21 +36,21 @@ const run = async () => {
   for (const n of [2, 18, 36, 55, 112, 114]) {
     const s = await surah(n)
     const first = s.verses[0].uthmani
-    check(`surah ${n} verse 1 is clean`, !startsWithBismillah(first), first.slice(0, 60))
+    check(`surah ${n} verse 1 is clean`, !BISMILLAH_START.test(first), first.slice(0, 60))
   }
 
   console.log('\n[2] Bismillah is served separately where it belongs')
   const s2 = await surah(2)
   check('surah 2 flags a bismillah header', s2.showBismillah === true)
-  check('surah 2 header text is the bismillah', startsWithBismillah(s2.bismillah), s2.bismillah)
+  check('surah 2 header text is the bismillah', BISMILLAH_START.test(s2.bismillah), s2.bismillah)
 
   const s1 = await surah(1)
   check('Al-Fatihah has NO separate header (it is verse 1)', s1.showBismillah === false)
-  check('Al-Fatihah verse 1 IS the bismillah', startsWithBismillah(s1.verses[0].uthmani), s1.verses[0].uthmani)
+  check('Al-Fatihah verse 1 IS the bismillah', BISMILLAH_START.test(s1.verses[0].uthmani), s1.verses[0].uthmani)
 
   const s9 = await surah(9)
   check('At-Tawbah has no bismillah at all', s9.showBismillah === false)
-  check('At-Tawbah verse 1 is clean', !startsWithBismillah(s9.verses[0].uthmani), s9.verses[0].uthmani)
+  check('At-Tawbah verse 1 is clean', !BISMILLAH_START.test(s9.verses[0].uthmani), s9.verses[0].uthmani)
 
   console.log('\n[3] Verse counts (nothing truncated by pagination)')
   for (const [n, expected] of Object.entries(COUNTS)) {

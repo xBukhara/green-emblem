@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
   SURAHS, fetchChapters, fetchTranslations, fetchSurah, fetchTafsir,
-  DEFAULT_TRANSLATION_ID,
+  toArabicNumber, DEFAULT_TRANSLATION_ID,
   type Chapter, type SurahPayload, type TranslationOption,
 } from '@/lib/quran'
 
@@ -195,15 +195,17 @@ export default function QuranReader() {
                   </button>
                 </div>
 
-                {/* ── The verse, exactly as the Complex supplies it ──────────
-                    text_qpc_hafs already ends with the mushaf's own
-                    end-of-ayah marker (١ ٢ ٣ …), so nothing is appended here.
-                    This used to draw a circled numeral built in JS from the
-                    verse number, which would now double the number and would
-                    mean the app was composing part of the Arabic line itself.
-                    Render the supplied string and nothing else. */}
+                {/* Uthmani text with end-of-ayah marker */}
                 <p style={{ ...UTHMANI, fontSize: '30px', color: '#f5f0e6', margin: '0 0 16px' }} dir="rtl" lang="ar">
                   {v.uthmani}
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    width: '34px', height: '34px', margin: '0 8px', verticalAlign: 'middle',
+                    borderRadius: '50%', border: '1px solid rgba(212,175,110,0.5)',
+                    fontFamily: 'var(--font-uthmani)', fontSize: '13px', color: 'var(--gold)', lineHeight: 1,
+                  }} aria-label={`Ayah ${v.number}`}>
+                    {toArabicNumber(v.number)}
+                  </span>
                 </p>
 
                 {/* Translation */}

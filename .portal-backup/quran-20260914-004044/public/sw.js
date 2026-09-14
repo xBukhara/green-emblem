@@ -6,19 +6,9 @@
  * network first for pages, and never cache API responses.
  */
 
-const VERSION = 'ge-v2'
+const VERSION = 'ge-v1'
 const SHELL_CACHE = `${VERSION}-shell`
-const FONT_CACHE = `${VERSION}-fonts`
 const OFFLINE_URL = '/offline.html'
-
-// The Uthmani mushaf font. Cached cross-origin on purpose: without it the
-// Quran falls back to a general Arabic face that does not place the mushaf
-// marks properly, which for Quranic text is a correctness problem, not a
-// cosmetic one. Fonts are versioned in their filename, so cache-first is safe.
-const FONT_HOSTS = ['verses.quran.foundation']
-const isQuranFont = url =>
-  (FONT_HOSTS.includes(url.hostname) && url.pathname.includes('/fonts/quran/')) ||
-  (url.origin === self.location.origin && /^\/fonts\/.*\.(woff2?|ttf)$/.test(url.pathname))
 
 const PRECACHE = [
   OFFLINE_URL,
@@ -51,27 +41,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const { request } = event
   if (request.method !== 'GET') return
-
-  // Quran font: cache-first, so the mushaf renders offline once seen.
-  const url = new URL(request.url)
-  if (isQuranFont(url)) {
-    event.respondWith((async () => {
-      const cache = await caches.open(FONT_CACHE)
-      const hit = await cache.match(request)
-      if (hit) return hit
-      try {
-        const res = await fetch(request)
-        // Never store an error page or an opaque response as the font.
-        if (res.ok && res.type !== 'opaque') cache.put(request, res.clone())
-        return res
-      } catch (err) {
-        return hit || Response.error()
-      }
-    })())
-    return
-  }
-
-  if (url.origin !== self.location.origin) return
+  if (new URL(request.url).origin !== self.location.origin) return
   if (request.mode !== 'navigate') return
 
   event.respondWith(
