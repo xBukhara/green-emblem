@@ -43,6 +43,10 @@ async function latestGreenTv(): Promise<GreenTvPreview | null> {
     const { data } = await supabase
       .from('greentv_posts')
       .select('text, posted_at')
+      // A post removed in the admin console must not reappear as the homepage
+      // headline. This is the second of three read paths for this table; the
+      // third is the admin console, which deliberately sees hidden rows.
+      .is('hidden_at', null)
       .order('posted_at', { ascending: false })
       .limit(5)
     for (const post of data || []) {

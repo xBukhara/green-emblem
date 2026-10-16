@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { FONT_PAIRS, PATTERNS, OVERLAYS } from '@/lib/campaign-design'
 import { MosqueAutocomplete, type MosquePlace } from '@/components/MosqueMap'
 
-const PANELS = ['overview','campaigns','requests','templates','masjids','orders','users','newsletter'] as const
+const PANELS = ['overview','campaigns','requests','templates','masjids','greentv','orders','users','newsletter'] as const
 type Panel = typeof PANELS[number]
 
 export default function AdminPage() {
@@ -25,6 +25,15 @@ export default function AdminPage() {
   const [templates, setTemplates] = useState<any[]>([])
   const [masjids, setMasjids] = useState<any[]>([])
   const [masjidEvents, setMasjidEvents] = useState<any[]>([])
+
+  // GreenTV moderation. The admin console is the one read path that
+  // deliberately sees hidden posts — the public API and the homepage
+  // headline both filter them out.
+  const [greentv, setGreentv] = useState<any[]>([])
+  const [showHiddenTv, setShowHiddenTv] = useState(false)
+  const [tvBusy, setTvBusy] = useState<string | null>(null)
+  const [tvPurgeArmed, setTvPurgeArmed] = useState<string | null>(null)
+  const [tvError, setTvError] = useState('')
   const [masjidModal, setMasjidModal] = useState(false)
   const [masjidPlace, setMasjidPlace] = useState<MosquePlace | null>(null)
   const [masjidForm, setMasjidForm] = useState({ name:'', instagram_handle:'', facebook_page:'', phone:'', website:'', verified:true, auto_sync_enabled:false })
@@ -67,7 +76,7 @@ export default function AdminPage() {
   }, [])
 
   const loadAll = async () => {
-    const [campaignsRes, requestsRes, ordersRes, usersRes, subscribersRes, donationsRes, templatesRes, masjidsRes, masjidEventsRes] = await Promise.all([
+    const [campaignsRes, requestsRes, ordersRes, usersRes, subscribersRes, donationsRes, templatesRes, masjidsRes, masjidEventsRes, greentvRes] = await Promise.all([
       supabase.from('campaigns').select('*').order('created_at', { ascending: false }),
       supabase.from('campaign_requests').select('*').order('submitted_at', { ascending: false }),
       supabase.from('orders').select('*').order('created_at', { ascending: false }),
@@ -77,6 +86,8 @@ export default function AdminPage() {
       supabase.from('campaign_templates').select('*').order('sort_order', { ascending: true }),
       supabase.from('masjids').select('*').eq('active', true).order('name', { ascending: true }),
       supabase.from('masjid_events').select('*').order('event_start', { ascending: false }),
+      // No .is('hidden_at', null) here on purpose — this panel moderates them.
+      supabase.from('greentv_posts').select('*').order('posted_at', { ascending: false }).limit(200),
     ])
 
     const camps = campaignsRes.data || []
@@ -92,6 +103,7 @@ export default function AdminPage() {
     setTemplates(templatesRes.data || [])
     setMasjids(masjidsRes.data || [])
     setMasjidEvents(masjidEventsRes.data || [])
+    setGreentv(greentvRes.data || [])
 
     setStats({
       campaigns: camps.length,
@@ -253,6 +265,32 @@ export default function AdminPage() {
     if (data) setTemplates(ts => ts.map(x => x.id === t.id ? data : x))
   }
 
+  // ── GreenTV moderation ──────────────────────────────────────────────────
+  // 'hide' is reversible and survives a Telegram edit; 'purge' deletes the
+  // row and is only safe once the message is gone from the channel too.
+  // See app/api/admin/greentv/[id]/route.ts for why.
+  const tvAction = async (id: string, action: 'hide' | 'restore' | 'purge') => {
+    setTvBusy(id); setTvError('')
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { setTvError('Your session expired — sign in again.'); setTvBusy(null); return }
+    const headers = { Authorization: `Bearer ${session.access_token}` }
+
+    const res = action === 'restore'
+      ? await fetch(`/api/admin/greentv/${id}`, { method: 'PATCH', headers })
+      : await fetch(`/api/admin/greentv/${id}${action === 'purge' ? '?purge=1' : ''}`, { method: 'DELETE', headers })
+
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      setTvError(json.error || 'Could not update that post.')
+    } else if (action === 'purge') {
+      setGreentv(ps => ps.filter(p => p.id !== id))
+    } else {
+      setGreentv(ps => ps.map(p => p.id === id ? { ...p, hidden_at: json.hidden_at ?? null } : p))
+    }
+    setTvPurgeArmed(null)
+    setTvBusy(null)
+  }
+
   // ── Styles ──────────────────────────────────────────────────────────────────
   const c = {
     page: { minHeight:'100dvh', background:'#080f08', display:'grid', gridTemplateColumns:'220px 1fr' } as React.CSSProperties,
@@ -283,6 +321,7 @@ export default function AdminPage() {
     {id:'requests',label:'Sadaqah Requests',icon:'◎'},
     {id:'templates',label:'Design Templates',icon:'▦'},
     {id:'masjids',label:'Masjids & Events',icon:'\u25b3'},
+    {id:'greentv',label:'GreenTV Posts',icon:'\u25b6'},
     {id:'orders',label:'Orders',icon:'◐'},
     {id:'users',label:'Users',icon:'◑'},
     {id:'newsletter',label:'Newsletter',icon:'◓'},
@@ -401,6 +440,112 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+
+        {/* ── GREENTV POSTS ── */}
+        {panel === 'greentv' && (() => {
+          const visible = greentv.filter(p => !p.hidden_at)
+          const hidden  = greentv.filter(p => p.hidden_at)
+          const shown   = showHiddenTv ? greentv : visible
+          const excerpt = (t: string | null) =>
+            !t ? '' : (t.replace(/\s+/g, ' ').trim().length > 120
+              ? t.replace(/\s+/g, ' ').trim().slice(0, 117) + '…'
+              : t.replace(/\s+/g, ' ').trim())
+
+          return (
+            <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
+              {sectionTitle(`GreenTV posts (${visible.length} live${hidden.length ? `, ${hidden.length} removed` : ''})`)}
+
+              <div style={{...c.card,display:'flex',flexDirection:'column',gap:'10px'}}>
+                <p style={{fontFamily:'Georgia,serif',fontSize:'12.5px',fontStyle:'italic',color:'rgba(255,255,255,0.45)',lineHeight:1.65,margin:0}}>
+                  These arrive from the Telegram channel. <strong style={{color:'rgba(255,255,255,0.7)',fontStyle:'normal'}}>Remove</strong> pulls a
+                  post out of the app and is reversible — it keeps working even if you later
+                  edit that message in Telegram. Deleting a message in Telegram does <em>not</em> remove
+                  it here, which is what this panel is for.
+                </p>
+                {hidden.length > 0 && (
+                  <button
+                    style={{...c.btn(showHiddenTv ? 'green' : 'gold'),alignSelf:'flex-start'}}
+                    onClick={() => setShowHiddenTv(v => !v)}
+                  >
+                    {showHiddenTv ? 'Hide removed posts' : `Show ${hidden.length} removed`}
+                  </button>
+                )}
+                {tvError && (
+                  <div style={{fontFamily:'Georgia,serif',fontSize:'12px',color:'#e24b4a'}}>{tvError}</div>
+                )}
+              </div>
+
+              <div style={c.card}>
+                {shown.length === 0 ? (
+                  <p style={{fontFamily:'Georgia,serif',fontSize:'13px',fontStyle:'italic',color:'rgba(255,255,255,0.3)',textAlign:'center',padding:'22px 0',margin:0}}>
+                    Nothing from Telegram yet. Posts appear here as soon as the channel webhook receives them.
+                  </p>
+                ) : (
+                  <table style={{width:'100%',borderCollapse:'collapse'}}>
+                    <thead><tr>{['','Post','Posted','Status','Actions'].map((h,i) => <th key={i} style={c.th}>{h}</th>)}</tr></thead>
+                    <tbody>
+                      {shown.map(post => {
+                        const isHidden = !!post.hidden_at
+                        const busy = tvBusy === post.id
+                        return (
+                          <tr key={post.id} style={isHidden ? {opacity:0.5} : undefined}>
+                            <td style={{...c.td,width:'64px'}}>
+                              {post.image_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={post.image_url} alt="" style={{width:'52px',height:'52px',objectFit:'cover',borderRadius:'7px',display:'block'}}/>
+                              ) : (
+                                <div style={{width:'52px',height:'52px',borderRadius:'7px',background:'rgba(255,255,255,0.04)',display:'grid',placeItems:'center',fontSize:'15px',color:'rgba(255,255,255,0.2)'}}>¶</div>
+                              )}
+                            </td>
+                            <td style={{...c.td,maxWidth:'460px'}}>
+                              {post.text
+                                ? excerpt(post.text)
+                                : <span style={{color:'rgba(255,255,255,0.3)',fontStyle:'italic'}}>Image only</span>}
+                            </td>
+                            <td style={{...c.td,fontSize:'11px',color:'rgba(255,255,255,0.35)',whiteSpace:'nowrap'}}>
+                              {new Date(post.posted_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
+                            </td>
+                            <td style={c.td}>
+                              <span style={c.badge(isHidden ? 'rgba(255,255,255,0.4)' : '#5a9e5a')}>
+                                {isHidden ? 'removed' : 'live'}
+                              </span>
+                            </td>
+                            <td style={{...c.td,display:'flex',gap:'6px',flexWrap:'wrap'}}>
+                              {isHidden ? (
+                                <>
+                                  <button style={c.btn('green')} disabled={busy} onClick={() => tvAction(post.id,'restore')}>
+                                    {busy ? '…' : 'Restore'}
+                                  </button>
+                                  {tvPurgeArmed === post.id ? (
+                                    <>
+                                      <button style={c.btn('red')} disabled={busy} onClick={() => tvAction(post.id,'purge')}>
+                                        {busy ? '…' : 'Delete for good'}
+                                      </button>
+                                      <button style={{...c.btn(),background:'rgba(255,255,255,0.06)',color:'rgba(255,255,255,0.6)'}} disabled={busy} onClick={() => setTvPurgeArmed(null)}>Cancel</button>
+                                      <span style={{fontFamily:'Georgia,serif',fontSize:'10.5px',fontStyle:'italic',color:'#e24b4a',flexBasis:'100%',lineHeight:1.5}}>
+                                        Only do this if the message is already deleted in Telegram — otherwise editing it there brings it back, live.
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <button style={{...c.btn(),background:'rgba(255,255,255,0.06)',color:'rgba(255,255,255,0.5)'}} disabled={busy} onClick={() => setTvPurgeArmed(post.id)}>Delete…</button>
+                                  )}
+                                </>
+                              ) : (
+                                <button style={c.btn('red')} disabled={busy} onClick={() => tvAction(post.id,'hide')}>
+                                  {busy ? '…' : 'Remove'}
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* ── SADAQAH REQUESTS ── */}
         {panel === 'requests' && (
