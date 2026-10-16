@@ -6,6 +6,12 @@ import {
   type Chapter, type SurahPayload,
 } from '@/lib/quran'
 import AyahMark from '@/components/AyahMark'
+import VerseActions from '@/components/VerseActions'
+import {
+  fetchProgress, markVerse, fetchBookmarks, saveBookmark,
+  EMPTY_PROGRESS, type Progress, type Bookmark,
+} from '@/lib/quran-progress'
+import { HASANAT_PER_LETTER, HASANAT_SOURCE } from '@/lib/hasanat'
 
 const inputStyle: React.CSSProperties = {
   background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(212,175,110,0.25)',
@@ -38,6 +44,14 @@ export default function QuranReader() {
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
 
+  // Progress, stars and notes. All of it optional: if the migration has not
+  // been run or nobody is signed in, `available` stays false and none of the
+  // bars or strips render. The Quran itself never depends on this.
+  const [progress, setProgress] = useState<Progress>(EMPTY_PROGRESS)
+  const [marks, setMarks] = useState<Record<string, Bookmark>>({})
+  const [busyVerse, setBusyVerse] = useState<string | null>(null)
+  const [dismissedResume, setDismissedResume] = useState(false)
+
   const [tafsirFor, setTafsirFor] = useState<number | null>(null)
   const [tafsir, setTafsir] = useState<{ text: string; name: string } | null>(null)
   const [tafsirLoading, setTafsirLoading] = useState(false)
@@ -58,6 +72,44 @@ export default function QuranReader() {
   useEffect(() => {
     try { localStorage.setItem(PREF_KEY, JSON.stringify({ surah: surahNumber })) } catch {}
   }, [surahNumber])
+
+  // One request per surah gives both the bars and the per-verse ticks.
+  useEffect(() => {
+    let cancelled = false
+    fetchProgress(surahNumber).then(p => { if (!cancelled) setProgress(p) })
+    fetchBookmarks().then(({ bookmarks }) => {
+      if (cancelled) return
+      const map: Record<string, Bookmark> = {}
+      for (const b of bookmarks) map[`${b.surah}:${b.ayah}`] = b
+      setMarks(map)
+    })
+    return () => { cancelled = true }
+  }, [surahNumber])
+
+  const readSet = new Set(progress.readInSurah)
+
+  const toggleRead = async (ayah: number, next: boolean) => {
+    const key = `${surahNumber}:${ayah}`
+    setBusyVerse(key)
+    const ok = await markVerse(surahNumber, ayah, next)
+    if (ok) setProgress(await fetchProgress(surahNumber))
+    setBusyVerse(null)
+  }
+
+  const patchMark = async (ayah: number, patch: { starred?: boolean; note?: string | null }) => {
+    const key = `${surahNumber}:${ayah}`
+    setBusyVerse(key)
+    const saved = await saveBookmark(surahNumber, ayah, patch)
+    if (saved) {
+      setMarks(prev => {
+        const next = { ...prev }
+        if (!saved.starred && !saved.note) delete next[key]
+        else next[key] = saved
+        return next
+      })
+    }
+    setBusyVerse(null)
+  }
 
   // Load the surah
   useEffect(() => {
@@ -151,6 +203,63 @@ export default function QuranReader() {
           </div>
         )}
 
+        {/* ── Progress ──────────────────────────────────────────────────
+            Two bars: this surah, and the whole mushaf. Only shown when
+            there is somewhere to store progress — see lib/quran-progress.ts.
+            Verses count when the reader marks them and never from scrolling,
+            so these bars mean something. */}
+        {progress.available && current && (
+          <div style={{ display: 'grid', gap: '12px', marginBottom: '24px', padding: '16px 18px', background: 'rgba(15,31,15,0.45)', border: '0.5px solid rgba(212,175,110,0.12)', borderRadius: '13px' }}>
+            {[
+              { label: current.name, done: progress.perSurah[surahNumber] || 0, total: current.ayahs },
+              { label: 'Whole Quran', done: progress.versesRead, total: progress.totalVerses },
+            ].map(({ label, done, total }) => {
+              const pct = total > 0 ? Math.min(100, (done / total) * 100) : 0
+              return (
+                <div key={label}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
+                    <span style={{ fontFamily: 'var(--font-inter)', fontSize: '10.5px', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.55)' }}>{label}</span>
+                    <span style={{ fontFamily: 'var(--font-inter)', fontSize: '11px', fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: 'var(--gold)' }}>
+                      {done.toLocaleString()} / {total.toLocaleString()} &middot; {pct < 1 && pct > 0 ? '<1' : Math.round(pct)}%
+                    </span>
+                  </div>
+                  <div style={{ height: '4px', borderRadius: '4px', background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                    <div style={{ width: `${pct}%`, height: '100%', borderRadius: '4px', background: 'var(--gold)', transition: 'width 0.4s cubic-bezier(0.22,1,0.36,1)' }} />
+                  </div>
+                </div>
+              )
+            })}
+
+            {progress.letters > 0 && (
+              <p style={{ fontFamily: 'var(--font-cormorant)', fontSize: '13px', fontStyle: 'italic', lineHeight: 1.6, color: 'rgba(255,255,255,0.45)', margin: '2px 0 0' }}>
+                {progress.letters.toLocaleString()} letters read &mdash; the narration in {HASANAT_SOURCE} promises a hasanah
+                for each, multiplied by {HASANAT_PER_LETTER}: <span style={{ color: 'var(--gold)', fontStyle: 'normal' }}>{(progress.letters * HASANAT_PER_LETTER).toLocaleString()}</span>.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Resume — only when they were last reading somewhere else */}
+        {progress.available && progress.resume && !dismissedResume && progress.resume.surah !== surahNumber && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '22px', padding: '12px 16px', background: 'rgba(212,175,110,0.07)', border: '0.5px solid rgba(212,175,110,0.25)', borderRadius: '11px' }}>
+            <span style={{ fontFamily: 'var(--font-cormorant)', fontSize: '14px', fontStyle: 'italic', color: 'rgba(255,255,255,0.6)', flex: 1, minWidth: '160px' }}>
+              You left off at {progress.resume.surah}:{progress.resume.ayah}.
+            </span>
+            <button
+              onClick={() => { setSurahNumber(progress.resume!.surah); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+              style={{ fontFamily: 'var(--font-inter)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', padding: '8px 14px', borderRadius: '7px', border: 'none', cursor: 'pointer', background: 'var(--gold)', color: '#0f1f0f' }}
+            >
+              PICK UP THERE
+            </button>
+            <button
+              onClick={() => setDismissedResume(true)}
+              style={{ fontFamily: 'var(--font-inter)', fontSize: '10px', fontWeight: 600, padding: '8px 10px', borderRadius: '7px', border: 'none', cursor: 'pointer', background: 'transparent', color: 'rgba(255,255,255,0.35)' }}
+            >
+              Not now
+            </button>
+          </div>
+        )}
+
         {/* Bismillah — rendered as its own header, never merged into verse 1 */}
         {!loading && data?.showBismillah && data.bismillah && (
           <div style={{ ...UTHMANI, textAlign: 'center', fontSize: '27px', color: 'rgba(245,240,230,0.92)', margin: '0 0 30px', lineHeight: 2 }} dir="rtl">
@@ -173,12 +282,28 @@ export default function QuranReader() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {data.verses.map(v => (
-              <div key={v.key} style={{ background: 'rgba(15,31,15,0.4)', border: '0.5px solid rgba(212,175,110,0.1)', borderRadius: '12px', padding: '20px 22px' }}>
+            {data.verses.map(v => {
+              const mk = marks[`${surahNumber}:${v.number}`]
+              const vState = { starred: !!mk?.starred, note: mk?.note ?? null, read: readSet.has(v.number) }
+              return (
+              <div key={v.key} style={{ position: 'relative', background: vState.read ? 'rgba(212,175,110,0.05)' : 'rgba(15,31,15,0.4)', border: `0.5px solid ${vState.read ? 'rgba(212,175,110,0.22)' : 'rgba(212,175,110,0.1)'}`, borderRadius: '12px', padding: '20px 22px', transition: 'background 0.25s, border-color 0.25s' }}>
 
                 {/* verse key + actions */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                  <span style={{ fontFamily: 'var(--font-inter)', fontSize: '10px', letterSpacing: '0.08em', color: 'rgba(212,175,110,0.75)', background: 'rgba(212,175,110,0.08)', borderRadius: '20px', padding: '3px 10px' }}>{v.key}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                    <span style={{ fontFamily: 'var(--font-inter)', fontSize: '10px', letterSpacing: '0.08em', color: 'rgba(212,175,110,0.75)', background: 'rgba(212,175,110,0.08)', borderRadius: '20px', padding: '3px 10px', flexShrink: 0 }}>{v.key}</span>
+                    {progress.available && (
+                      <VerseActions
+                        surah={surahNumber}
+                        ayah={v.number}
+                        state={vState}
+                        busy={busyVerse === `${surahNumber}:${v.number}`}
+                        onStar={next => patchMark(v.number, { starred: next })}
+                        onNote={next => patchMark(v.number, { note: next })}
+                        onRead={next => toggleRead(v.number, next)}
+                      />
+                    )}
+                  </span>
                   <button
                     onClick={() => openTafsir(v.number)}
                     style={{ fontFamily: 'var(--font-inter)', fontSize: '10px', letterSpacing: '0.06em', color: tafsirFor === v.number ? 'var(--gold)' : 'rgba(255,255,255,0.35)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
@@ -228,7 +353,8 @@ export default function QuranReader() {
                   </div>
                 )}
               </div>
-            ))}
+              )
+            })}
           </div>
         )}
 

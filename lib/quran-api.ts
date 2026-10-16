@@ -106,6 +106,34 @@ export async function getTranslations(): Promise<Resource[]> {
   return [{ id, name: TRANSLATION_NAME, author: TRANSLATION_NAME }]
 }
 
+// ── One verse's text, for counting letters ───────────────────────────────
+// The reward counter needs the length of a verse at the moment it is marked
+// read, and that count has to happen on the server — a figure the client can
+// inflate is not worth displaying. Fetching the single verse rather than the
+// whole surah keeps it cheap, and the 30-day cache means repeat marks in the
+// same verse cost nothing upstream.
+export async function getVerseText(surah: number, ayah: number): Promise<string> {
+  if (!Number.isInteger(surah) || surah < 1 || surah > 114) throw new Error('Invalid surah')
+  if (!Number.isInteger(ayah) || ayah < 1) throw new Error('Invalid ayah')
+
+  const key = `${surah}:${ayah}`
+  const data = await get(`/verses/by_key/${key}?fields=${QURAN_TEXT_FIELD}`, IMMUTABLE)
+  const text = data?.verse?.[QURAN_TEXT_FIELD]
+  if (typeof text !== 'string' || !text.trim()) {
+    throw new Error(`No ${QURAN_TEXT_FIELD} for ${key}`)
+  }
+  // Strip the ayah numeral first, so digits can never count as letters.
+  return splitAyahMarker(text, key).body
+}
+
+// Total ayat, summed from the chapter list rather than hardcoded, so the
+// denominator of "overall completion" is never a magic number that can drift
+// from the data it is compared against.
+export async function getTotalVerses(): Promise<number> {
+  const chapters = await getChapters()
+  return chapters.reduce((sum, c) => sum + (c.verses_count || 0), 0)
+}
+
 let ibnKathirIdCache: number | null = null
 
 // Resolve the English Ibn Kathir tafsir by name — this is the ONLY tafsir
