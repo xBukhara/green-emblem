@@ -17,6 +17,20 @@ export const CALC_METHODS = [
 
 export type CalcMethodId = typeof CALC_METHODS[number]['id']
 
+// ── The calculation method is fixed: ISNA (North America) ───────────────
+// Deliberately not user-selectable. ISNA is the standard across North
+// America, and a picker only invites people to change a number they have no
+// way to check — then wonder why the app disagrees with their masjid.
+//
+// The Shafi/Hanafi Asr toggle is a SEPARATE thing and stays. That is a fiqh
+// choice, not a calculation method, and removing it would hand Hanafi users
+// an Asr they consider wrong with no way to correct it.
+//
+// CALC_METHODS above is no longer surfaced in the UI. It is kept so the
+// ids stay typed and documented — if you ever expose a picker again, that
+// is a product decision, not a refactor.
+export const CALC_METHOD: CalcMethodId = 'NorthAmerica'
+
 function getParams(methodId: CalcMethodId, madhab: 'shafi' | 'hanafi'): CalculationParameters {
   const fn = (CalculationMethod as any)[methodId] || CalculationMethod.MuslimWorldLeague
   const params: CalculationParameters = fn()
@@ -34,7 +48,7 @@ export type DayPrayerTimes = {
   isha: Date
 }
 
-export function computeDayTimes(lat: number, lng: number, date: Date, methodId: CalcMethodId): DayPrayerTimes {
+export function computeDayTimes(lat: number, lng: number, date: Date, methodId: CalcMethodId = CALC_METHOD): DayPrayerTimes {
   const coords = new Coordinates(lat, lng)
   const shafiTimes = new PrayerTimes(coords, date, getParams(methodId, 'shafi'))
   const hanafiTimes = new PrayerTimes(coords, date, getParams(methodId, 'hanafi'))

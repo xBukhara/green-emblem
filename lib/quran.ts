@@ -133,7 +133,13 @@ export type Chapter = {
   bismillah_pre: boolean
 }
 
-export type Verse = { number: number; key: string; uthmani: string; translation: string }
+export type Verse = {
+  number: number
+  key: string
+  uthmani: string   // verse text with the ayah marker removed
+  numeral: string   // that marker's digits, drawn by components/AyahMark
+  translation: string
+}
 
 export type SurahPayload = {
   chapter: Chapter
@@ -145,8 +151,10 @@ export type SurahPayload = {
 
 export type TranslationOption = { id: number; name: string; author: string }
 
-// Quran.com's own default translation.
-export const DEFAULT_TRANSLATION_ID = 131
+// Saheeh International — the only translation the reader offers. The server
+// resolves it by name at request time (lib/quran-api.ts → getTranslationId),
+// so this is only the id the first client request carries.
+export const DEFAULT_TRANSLATION_ID = 20
 
 export async function fetchChapters(): Promise<Chapter[] | null> {
   try {

@@ -68,39 +68,42 @@ export async function getChapters(): Promise<Chapter[]> {
 // translation. The constants below are only a last-resort fallback.
 
 const FALLBACK_IBN_KATHIR = 169
-const FALLBACK_TRANSLATION = 131 // Dr. Mustafa Khattab — The Clear Quran
+
+// ── Translation: Saheeh International, and only that ─────────────────────
+// There is no picker. One translation keeps the reader simple and means a
+// verse always reads the same way for everyone discussing it.
+//
+// Resolved by NAME at runtime, like the tafsir below, so an upstream
+// renumbering cannot silently swap in a different translation. The numeric
+// id is only the last resort.
+const FALLBACK_SAHEEH = 20 // Saheeh International
+export const TRANSLATION_NAME = 'Saheeh International'
 
 export type Resource = { id: number; name: string; author: string }
 
-// A curated shortlist of widely-trusted English translations. Only the ones
-// the upstream actually offers are shown, matched by author/name.
-const PREFERRED_TRANSLATIONS: { match: RegExp; label: string }[] = [
-  { match: /khattab/i,                     label: 'The Clear Quran — Dr. Mustafa Khattab' },
-  { match: /saheeh|sahih/i,                label: 'Saheeh International' },
-  { match: /taqi\s*usmani|usmani/i,        label: 'Mufti Taqi Usmani' },
-  { match: /pickthall/i,                   label: 'Pickthall' },
-  { match: /yusuf\s*ali/i,                 label: 'Abdullah Yusuf Ali' },
-  { match: /hilali|muhsin\s*khan/i,        label: 'Hilali & Khan' },
-]
+let saheehIdCache: number | null = null
 
-export async function getTranslations(): Promise<Resource[]> {
+export async function getTranslationId(): Promise<number> {
+  if (saheehIdCache) return saheehIdCache
   try {
     const data = await get('/resources/translations?language=en', RESOURCES)
     const all: any[] = data?.translations || []
-    const english = all.filter(t => (t.language_name || '').toLowerCase() === 'english')
-
-    const picked: Resource[] = []
-    for (const pref of PREFERRED_TRANSLATIONS) {
-      const hit = english.find(t =>
-        pref.match.test(`${t.author_name || ''} ${t.name || ''}`) &&
-        !picked.some(p => p.id === t.id)
-      )
-      if (hit) picked.push({ id: hit.id, name: pref.label, author: hit.author_name || '' })
-    }
-    return picked.length ? picked : [{ id: FALLBACK_TRANSLATION, name: 'The Clear Quran — Dr. Mustafa Khattab', author: 'Mustafa Khattab' }]
+    const hit = all.find(t => {
+      const lang = (t.language_name || '').toLowerCase()
+      const hay = `${t.name || ''} ${t.author_name || ''} ${t.slug || ''}`
+      return lang === 'english' && /saheeh|sahih/i.test(hay) && /international/i.test(hay)
+    })
+    saheehIdCache = hit?.id ?? FALLBACK_SAHEEH
   } catch {
-    return [{ id: FALLBACK_TRANSLATION, name: 'The Clear Quran — Dr. Mustafa Khattab', author: 'Mustafa Khattab' }]
+    saheehIdCache = FALLBACK_SAHEEH
   }
+  return saheehIdCache!
+}
+
+// Kept so the reader can label what it is showing without a second call.
+export async function getTranslations(): Promise<Resource[]> {
+  const id = await getTranslationId()
+  return [{ id, name: TRANSLATION_NAME, author: TRANSLATION_NAME }]
 }
 
 let ibnKathirIdCache: number | null = null
@@ -129,8 +132,33 @@ export async function getIbnKathirId(): Promise<number> {
 export type Verse = {
   number: number      // ayah number within the surah
   key: string         // "2:255"
-  uthmani: string     // Uthmani script, bismillah NOT included
+  uthmani: string     // Uthmani script, bismillah NOT included, marker removed
+  numeral: string     // the ayah number in Arabic-Indic digits, e.g. "٢٥٥"
   translation: string // plain text, footnote markers stripped
+}
+
+// ── Splitting the ayah marker off the verse ──────────────────────────────
+// text_qpc_hafs ends each verse with its Arabic-Indic number, the way the
+// printed page does. To draw that number inside the traditional ornament,
+// the UI needs it as a value of its own — so it is separated here, and the
+// separation is ASSERTED rather than assumed:
+//
+//   • the suffix must be nothing but Arabic-Indic digits
+//   • what remains must still be non-empty
+//
+// If either check fails we throw instead of guessing. This does not touch a
+// single Quranic word: ayah numbering is the mushaf's apparatus, not part of
+// the revealed text, and the digits are provably just digits.
+const AYAH_MARKER = /\s*([٠-٩]+)\s*$/
+
+export function splitAyahMarker(text: string, key: string): { body: string; numeral: string } {
+  const m = text.match(AYAH_MARKER)
+  if (!m || m.index === undefined) {
+    throw new Error(`No ayah marker at the end of ${key} — upstream shape changed`)
+  }
+  const body = text.slice(0, m.index).trim()
+  if (!body) throw new Error(`Verse ${key} contains nothing but an ayah marker`)
+  return { body, numeral: m[1] }
 }
 
 export type SurahPayload = {
@@ -200,10 +228,12 @@ export async function getSurah(id: number, translationId: number): Promise<Surah
       if (typeof text !== 'string' || !text.trim()) {
         throw new Error(`Missing ${QURAN_TEXT_FIELD} for ${v.verse_key}`)
       }
+      const { body, numeral } = splitAyahMarker(text, v.verse_key)
       verses.push({
         number: v.verse_number,
         key: v.verse_key,
-        uthmani: text,
+        uthmani: body,
+        numeral,
         translation: plainText(v.translations?.[0]?.text || ''),
       })
     }

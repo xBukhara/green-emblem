@@ -32,13 +32,18 @@ const SECTIONS: Section[] = [
   },
   {
     href: '/prayer', tone: 'default', tag: 'WORSHIP',
-    title: 'Prayer & Qibla',
-    desc: 'Accurate prayer times for your location, a live Qibla compass, and your madhab preferences.',
+    title: 'Prayer times',
+    desc: 'Today’s times for your location, calculated with the ISNA (North America) convention.',
   },
   {
-    href: '/prayer?tab=quran', tone: 'default', tag: 'WORSHIP',
+    href: '/qibla', tone: 'default', tag: 'WORSHIP',
+    title: 'Qibla',
+    desc: 'A live compass that points to the Ka’bah from wherever you are standing.',
+  },
+  {
+    href: '/quran', tone: 'default', tag: 'WORSHIP',
     title: 'Quran',
-    desc: 'Read any surah in Uthmani script with translation and Tafsir Ibn Kathir — your place remembered.',
+    desc: 'Read any surah in Uthmani script with the Saheeh International translation and Tafsir Ibn Kathir.',
   },
   {
     href: '/greentv', tone: 'green', tag: 'MEDIA',

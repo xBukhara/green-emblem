@@ -1,10 +1,11 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import {
-  SURAHS, fetchChapters, fetchTranslations, fetchSurah, fetchTafsir,
+  SURAHS, fetchChapters, fetchSurah, fetchTafsir,
   DEFAULT_TRANSLATION_ID,
-  type Chapter, type SurahPayload, type TranslationOption,
+  type Chapter, type SurahPayload,
 } from '@/lib/quran'
+import AyahMark from '@/components/AyahMark'
 
 const inputStyle: React.CSSProperties = {
   background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(212,175,110,0.25)',
@@ -28,8 +29,10 @@ export default function QuranReader() {
   const [surahNumber, setSurahNumber] = useState(1)
   const [chapters, setChapters] = useState<Chapter[] | null>(null)
 
-  const [translations, setTranslations] = useState<TranslationOption[]>([])
-  const [translationId, setTranslationId] = useState(DEFAULT_TRANSLATION_ID)
+  // Saheeh International only — there is no picker. The id is resolved by
+  // name on the server (lib/quran-api.ts); this constant is just the default
+  // the first request carries.
+  const translationId = DEFAULT_TRANSLATION_ID
 
   const [data, setData] = useState<SurahPayload | null>(null)
   const [loading, setLoading] = useState(true)
@@ -40,27 +43,21 @@ export default function QuranReader() {
   const [tafsirLoading, setTafsirLoading] = useState(false)
   const [tafsirMissing, setTafsirMissing] = useState(false)
 
-  // Restore last-read position + translation choice
+  // Restore the surah they were last on
   useEffect(() => {
     try {
       const raw = localStorage.getItem(PREF_KEY)
       if (raw) {
         const p = JSON.parse(raw)
         if (p.surah >= 1 && p.surah <= 114) setSurahNumber(p.surah)
-        if (p.translationId) setTranslationId(p.translationId)
       }
     } catch {}
     fetchChapters().then(setChapters)
-    fetchTranslations().then(list => {
-      setTranslations(list)
-      // If the saved/default translation isn't offered, fall back to the first
-      setTranslationId(prev => (list.length && !list.some(t => t.id === prev)) ? list[0].id : prev)
-    })
   }, [])
 
   useEffect(() => {
-    try { localStorage.setItem(PREF_KEY, JSON.stringify({ surah: surahNumber, translationId })) } catch {}
-  }, [surahNumber, translationId])
+    try { localStorage.setItem(PREF_KEY, JSON.stringify({ surah: surahNumber })) } catch {}
+  }, [surahNumber])
 
   // Load the surah
   useEffect(() => {
@@ -135,17 +132,12 @@ export default function QuranReader() {
 
       {/* ── Reader ── */}
       <div>
-        {/* Translation picker (script is always Uthmani) */}
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '20px' }}>
+        {/* One translation, stated rather than chosen. Uthmani script only. */}
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'baseline', marginBottom: '20px' }}>
           <span style={{ fontFamily: 'Georgia, serif', fontSize: '9px', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.35)' }}>TRANSLATION</span>
-          <select
-            value={translationId}
-            onChange={e => setTranslationId(Number(e.target.value))}
-            style={{ ...inputStyle, cursor: 'pointer', flex: 1, minWidth: '220px' }}
-          >
-            {translations.length === 0 && <option value={DEFAULT_TRANSLATION_ID}>The Clear Quran — Dr. Mustafa Khattab</option>}
-            {translations.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
+          <span style={{ fontFamily: 'var(--font-inter)', fontSize: '12.5px', color: 'rgba(255,255,255,0.65)' }}>
+            Saheeh International
+          </span>
         </div>
 
         {/* Surah header */}
@@ -195,15 +187,16 @@ export default function QuranReader() {
                   </button>
                 </div>
 
-                {/* ── The verse, exactly as the Complex supplies it ──────────
-                    text_qpc_hafs already ends with the mushaf's own
-                    end-of-ayah marker (١ ٢ ٣ …), so nothing is appended here.
-                    This used to draw a circled numeral built in JS from the
-                    verse number, which would now double the number and would
-                    mean the app was composing part of the Arabic line itself.
-                    Render the supplied string and nothing else. */}
+                {/* ── The verse, then its ornament ───────────────────────────
+                    The Arabic is the Complex's text with nothing added. The
+                    numeral is the Complex's own ayah number, separated off in
+                    lib/quran-api.ts (where that split is asserted) so it can
+                    be drawn inside the traditional rosette instead of sitting
+                    at the end of the line as a bare digit.
+                    AyahMark draws the frame; it never composes the number. */}
                 <p style={{ ...UTHMANI, fontSize: '30px', color: '#f5f0e6', margin: '0 0 16px' }} dir="rtl" lang="ar">
                   {v.uthmani}
+                  <AyahMark numeral={v.numeral} />
                 </p>
 
                 {/* Translation */}
@@ -240,7 +233,7 @@ export default function QuranReader() {
         )}
 
         <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: 'rgba(255,255,255,0.25)', fontStyle: 'italic', textAlign: 'center', marginTop: '24px', lineHeight: 1.7 }}>
-          Arabic text (Uthmani script), translations and Tafsir Ibn Kathir are served by the Quran.com API.
+          Arabic text (Uthmani script), the Saheeh International translation and Tafsir Ibn Kathir are served by the Quran.com API.
           <br/>Offered for reading and reflection, not as a substitute for scholarly guidance.
         </p>
       </div>

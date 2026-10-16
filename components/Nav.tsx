@@ -9,10 +9,11 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 const LINKS = [
-  { href: '/prayer',            label: 'Prayer' },
-  { href: '/prayer?tab=quran',  label: 'Quran' },
-  { href: '/explore',           label: 'Explore' },
-  { href: '/shop',              label: 'Shop' },
+  { href: '/prayer',  label: 'Prayer' },
+  { href: '/qibla',   label: 'Qibla' },
+  { href: '/quran',   label: 'Quran' },
+  { href: '/explore', label: 'Explore' },
+  { href: '/shop',    label: 'Shop' },
 ]
 
 export default function Nav() {
