@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { isMissingHiddenAt, MIGRATION_HINT } from '@/lib/greentv'
 
 // GET /api/greentv-posts — public feed, most recent first.
 // ?before= (ISO timestamp) for simple pagination.
@@ -15,15 +16,27 @@ export async function GET(request: NextRequest) {
   // deleted row would reappear the moment that message is edited in the
   // channel. Keeping the row — with hidden_at set — is what makes the removal
   // stick, because an upsert does not touch columns it doesn't list.
-  let query = supabase
-    .from('greentv_posts')
-    .select('*')
-    .is('hidden_at', null)
-    .order('posted_at', { ascending: false })
-    .limit(limit)
-  if (before) query = query.lt('posted_at', before)
+  //
+  // Rebuilt each call: a Supabase query builder cannot be reused once awaited.
+  const base = () => {
+    let q = supabase
+      .from('greentv_posts')
+      .select('*')
+      .order('posted_at', { ascending: false })
+      .limit(limit)
+    if (before) q = q.lt('posted_at', before)
+    return q
+  }
 
-  const { data, error } = await query
+  let { data, error } = await base().is('hidden_at', null)
+
+  // If the migration has not run yet, serve the feed rather than nothing.
+  // lib/greentv.ts explains why this fallback is safe and kept this narrow.
+  if (error && isMissingHiddenAt(error)) {
+    console.error(MIGRATION_HINT)
+    ;({ data, error } = await base())
+  }
+
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ posts: data })
 }

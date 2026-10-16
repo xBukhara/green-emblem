@@ -1,5 +1,6 @@
 import 'server-only'
 import { createPublicClient, createAdminClient } from '@/lib/supabase/server'
+import { isMissingHiddenAt, MIGRATION_HINT } from '@/lib/greentv'
 
 // ── Homepage live previews (server-side) ─────────────────────────────────
 // Each card on the homepage shows a glimpse of what's behind the link.
@@ -40,15 +41,27 @@ function toHeadline(text: string | null): string | null {
 async function latestGreenTv(): Promise<GreenTvPreview | null> {
   try {
     const supabase = createPublicClient()
-    const { data } = await supabase
+    // A post removed in the admin console must not reappear as the homepage
+    // headline. This is the second of three read paths for this table; the
+    // third is the admin console, which deliberately sees hidden rows.
+    //
+    // Rebuilt each call: a Supabase query builder cannot be reused once awaited.
+    const base = () => supabase
       .from('greentv_posts')
       .select('text, posted_at')
-      // A post removed in the admin console must not reappear as the homepage
-      // headline. This is the second of three read paths for this table; the
-      // third is the admin console, which deliberately sees hidden rows.
-      .is('hidden_at', null)
       .order('posted_at', { ascending: false })
       .limit(5)
+
+    let { data, error } = await base().is('hidden_at', null)
+
+    // Before greentv-moderation.sql runs, filtering on hidden_at is rejected
+    // outright. This file fails soft, so without the fallback the card would
+    // silently go blank — which is how this went unnoticed. See lib/greentv.ts.
+    if (error && isMissingHiddenAt(error)) {
+      console.error(MIGRATION_HINT)
+      ;({ data } = await base())
+    }
+
     for (const post of data || []) {
       const headline = toHeadline(post.text)
       if (headline) return { headline, postedAt: post.posted_at }
