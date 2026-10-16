@@ -21,9 +21,14 @@ type Section = {
 
 const SECTIONS: Section[] = [
   {
+    href: '/nearby', tone: 'default', tag: 'MAP',
+    title: 'Nearby',
+    desc: 'A full-screen map of masjids, halal food and community events inside the distance you’re willing to travel.',
+  },
+  {
     href: '/greenworld-plus', tone: 'violet', tag: 'COMMUNITY',
     title: 'GreenWorld+',
-    desc: 'Follow your masjid, see local events, and explore masjids and halal food within your travel radius.',
+    desc: 'Follow your masjid and see what they post — events, fundraisers, programs and youth announcements.',
   },
   {
     href: '/prayer', tone: 'default', tag: 'WORSHIP',

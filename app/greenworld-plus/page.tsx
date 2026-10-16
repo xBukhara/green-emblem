@@ -1,9 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import { createClient } from '@/lib/supabase/client'
-import { ExploreNearbyMap } from '@/components/MosqueMap'
 import RsvpButton from '@/components/RsvpButton'
 
 type Masjid = { id: string; name: string; city: string; state: string; verified: boolean }
@@ -72,16 +72,8 @@ export default function GreenWorldPlusPage() {
     setSaving(false)
   }
 
-  const saveTravelRadius = async (mi: number) => {
-    if (!user) return
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
-    fetch('/api/profile', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-      body: JSON.stringify({ travel_radius_miles: mi }),
-    }).catch(() => {})
-  }
+  // The travel radius is now saved by the /nearby screen, which owns the
+  // slider. Nothing on this page sets it any more.
 
   const followedMasjid = masjids.find(m => m.id === profile?.followed_masjid_id)
   const displayedEvents = events
@@ -142,18 +134,23 @@ export default function GreenWorldPlusPage() {
           )}
         </div>
 
-        {/* Explore nearby — radius-bounded community map */}
-        <div style={{ background: 'rgba(15,31,15,0.55)', border: '0.5px solid rgba(212,175,110,0.14)', borderRadius: '16px', padding: '22px', marginBottom: '28px' }}>
+        {/* Explore nearby — the map now has its own full-screen route, so this
+            is a way into it rather than a 340px box in the middle of a page.
+            The embedded ExploreNearbyMap component is still exported if an
+            inline map is ever wanted here again. */}
+        <Link
+          href="/nearby"
+          style={{ display: 'block', textDecoration: 'none', background: 'rgba(15,31,15,0.55)', border: '0.5px solid rgba(212,175,110,0.14)', borderRadius: '16px', padding: '22px', marginBottom: '28px' }}
+        >
           <div style={{ fontFamily: 'Georgia, serif', fontSize: '9px', letterSpacing: '0.2em', color: '#d4af6e', marginBottom: '6px' }}>EXPLORE NEARBY</div>
-          <p style={{ fontFamily: 'var(--font-cormorant)', fontSize: '14px', fontStyle: 'italic', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, marginBottom: '16px' }}>
+          <p style={{ fontFamily: 'var(--font-cormorant)', fontSize: '14px', fontStyle: 'italic', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, marginBottom: '14px' }}>
             Set how far you&apos;re willing to travel — masjids, halal food, and community events within your boundary.
           </p>
-          <ExploreNearbyMap
-            initialRadiusMi={profile?.travel_radius_miles}
-            events={events}
-            onRadiusSave={saveTravelRadius}
-          />
-        </div>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', fontFamily: 'var(--font-cinzel)', fontSize: '10px', letterSpacing: '0.16em', color: '#fff' }}>
+            OPEN THE MAP
+            <span aria-hidden="true" style={{ color: '#d4af6e' }}>&rarr;</span>
+          </span>
+        </Link>
 
         {/* From the masjids themselves */}
         {posts.length > 0 && (

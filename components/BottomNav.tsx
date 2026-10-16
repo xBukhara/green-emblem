@@ -2,19 +2,24 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { Home, Compass, HeartHandshake, LayoutGrid, User } from 'lucide-react'
+import { Home, Compass, HeartHandshake, MapPin, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { isConsumerSurface } from '@/lib/surface'
+import { isConsumerSurface, isFullBleedPath } from '@/lib/surface'
 
 // ── Mobile bottom tab bar ────────────────────────────────────────────────
-// Pocket-check features one thumb-tap away. Hidden on desktop, and on the
-// admin console and masjid portal — those are their own surfaces and this
-// bar would sit over their content.
+// Pocket-check features one thumb-tap away. Hidden on desktop; on the admin
+// console and masjid portal, which are their own surfaces; and on full-bleed
+// consumer screens like the /nearby map, which take over the viewport and
+// provide their own way back.
+//
+// The fourth tab points at the map rather than the /explore hub: finding
+// what is around you is the thing people open this app on the street to do.
+// The hub is still at /explore, linked from the top nav and from the map.
 const TABS = [
   { href: '/',          label: 'Home',    Icon: Home },
   { href: '/prayer',    label: 'Prayer',  Icon: Compass },
   { href: '/sadaqah',   label: 'Give',    Icon: HeartHandshake },
-  { href: '/explore',   label: 'Explore', Icon: LayoutGrid },
+  { href: '/nearby',    label: 'Nearby',  Icon: MapPin },
   { href: '/dashboard', label: 'Profile', Icon: User },
 ]
 
@@ -28,6 +33,7 @@ export default function BottomNav() {
   useEffect(() => { setHost(window.location.hostname) }, [])
 
   if (!isConsumerSurface(pathname, host)) return null
+  if (isFullBleedPath(pathname)) return null
 
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname?.startsWith(href)

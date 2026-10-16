@@ -36,10 +36,29 @@ export function isPortalHost(hostname?: string | null): boolean {
 
 const NON_CONSUMER_PATHS = ['/admin', '/portal']
 
-function isNonConsumerPath(pathname?: string | null): boolean {
+function matchesPath(list: string[], pathname?: string | null): boolean {
   if (!pathname) return false
   // Exact match or a real path segment — '/administrators' is not '/admin'.
-  return NON_CONSUMER_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
+  return list.some(p => pathname === p || pathname.startsWith(p + '/'))
+}
+
+function isNonConsumerPath(pathname?: string | null): boolean {
+  return matchesPath(NON_CONSUMER_PATHS, pathname)
+}
+
+// ── Full-bleed consumer screens ─────────────────────────────────────────
+// These ARE the consumer app — unlike /admin and /portal — but they take
+// over the whole viewport, so the mobile tab bar and the install banner
+// would sit on top of their content. /nearby is the full-screen map: it
+// owns every gesture inside it (gestureHandling: 'greedy') and offers its
+// own way back out, so the tab bar is not the escape hatch there.
+//
+// Keep this separate from NON_CONSUMER_PATHS. A full-bleed screen still
+// wants the service worker, push, and everything else the consumer app has.
+const FULL_BLEED_PATHS = ['/nearby']
+
+export function isFullBleedPath(pathname?: string | null): boolean {
+  return matchesPath(FULL_BLEED_PATHS, pathname)
 }
 
 /**

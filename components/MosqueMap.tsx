@@ -18,7 +18,10 @@ function mapsReady(): boolean {
   return !!(g?.maps?.Map && g?.maps?.places?.PlacesService)
 }
 
-function loadGoogleMaps(): Promise<void> {
+// Exported so the full-screen /nearby screen uses this exact loader rather
+// than a copy of it. The `loading=async` subtlety below is the kind of thing
+// that gets fixed in one copy and not the other.
+export function loadGoogleMaps(): Promise<void> {
   if (typeof window === 'undefined') return Promise.resolve()
   if (mapsReady()) return Promise.resolve()
   if (mapsLoadPromise) return mapsLoadPromise
@@ -130,7 +133,7 @@ const mapShell: React.CSSProperties = {
   border: '0.5px solid rgba(212,175,110,0.18)', background: 'rgba(15,31,15,0.4)',
 }
 
-function goldMarkerIcon(g: any, color = '#d4af6e', scale = 8) {
+export function goldMarkerIcon(g: any, color = '#d4af6e', scale = 8) {
   return {
     path: g.maps.SymbolPath.CIRCLE,
     scale,
@@ -263,31 +266,31 @@ export function MosqueMapEmbed({ placeId, name, lat, lng, height = 200 }: {
 // ── Explore Nearby — radius-bounded community map ────────────────────────
 // The user sets how far they're willing to travel; the map draws that
 // boundary and finds masjids, halal food, and community events inside it.
-const RADIUS_KEY = 'ge_travel_radius'
-const LOCATION_CACHE_KEY = 'ge_prayer_location' // shared with the Prayer page
-const MI_TO_M = 1609.34
+export const RADIUS_KEY = 'ge_travel_radius'
+export const LOCATION_CACHE_KEY = 'ge_prayer_location' // shared with the Prayer page
+export const MI_TO_M = 1609.34
 export const RADIUS_MIN = 2
 export const RADIUS_MAX = 30 // Places nearby search caps at 50km ≈ 31mi
 
-type Category = 'masjids' | 'halal' | 'events'
+export type Category = 'masjids' | 'halal' | 'events'
 
 export type NearbyEvent = {
   id: string; title: string; event_start: string
   masjids: { name: string; city: string; state: string; lat: number | null; lng: number | null } | null
 }
 
-type ResultItem = {
+export type ResultItem = {
   id: string; category: Category; name: string; detail: string
   lat: number; lng: number; distanceMi: number
 }
 
-const CATEGORY_META: Record<Category, { label: string; color: string }> = {
+export const CATEGORY_META: Record<Category, { label: string; color: string }> = {
   masjids: { label: 'Masjids', color: '#d4af6e' },
   halal:   { label: 'Halal food', color: '#5a9e5a' },
   events:  { label: 'Events', color: '#9b8ec4' },
 }
 
-function haversineMi(aLat: number, aLng: number, bLat: number, bLng: number) {
+export function haversineMi(aLat: number, aLng: number, bLat: number, bLng: number) {
   const R = 3958.8
   const dLat = (bLat - aLat) * Math.PI / 180
   const dLng = (bLng - aLng) * Math.PI / 180
